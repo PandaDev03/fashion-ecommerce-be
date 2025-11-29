@@ -12,18 +12,21 @@ export class User extends BaseEntity {
   @Column()
   password: string;
 
-  @Column()
+  @Column({ nullable: true })
   birthday: string;
 
   @Column({ default: true })
   isActive: boolean;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
-  @Column()
+  @Column({ nullable: true })
   phone: string;
 
   @Column({ nullable: true })
   avatar: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  refreshToken: string | null;
 }
