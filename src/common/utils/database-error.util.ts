@@ -5,18 +5,20 @@ import {
 } from '@nestjs/common';
 import { DATABASE_ERRORS } from '../constant/database-errors.constant';
 
-export function handleDatabaseError(error: any, context: string): never {
+export function handleDatabaseError(error: any, context?: string): never {
+  console.log(error);
+
   // PostgreSQL errors
   if (error.code) {
     switch (error.code) {
       case DATABASE_ERRORS.UNIQUE_VIOLATION:
-        throw new ConflictException('Resource already exists');
+        throw new ConflictException(context || 'Resource already exists');
       case DATABASE_ERRORS.FOREIGN_KEY_VIOLATION:
-        throw new BadRequestException('Invalid reference');
+        throw new BadRequestException(context || 'Invalid reference');
       case DATABASE_ERRORS.NOT_NULL_VIOLATION:
-        throw new BadRequestException('Required field is missing');
+        throw new BadRequestException(context || 'Required field is missing');
       case DATABASE_ERRORS.CHECK_VIOLATION:
-        throw new BadRequestException('Invalid data');
+        throw new BadRequestException(context || 'Invalid data');
     }
   }
 
@@ -29,5 +31,7 @@ export function handleDatabaseError(error: any, context: string): never {
   }
 
   // Default error
-  throw new InternalServerErrorException(context);
+  throw new InternalServerErrorException(
+    context ?? 'An unexpected error occurred',
+  );
 }
