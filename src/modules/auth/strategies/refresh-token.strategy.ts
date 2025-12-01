@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { UsersService } from '../../users/users.service';
+import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
@@ -14,7 +14,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
 ) {
   constructor(
     configService: ConfigService,
-    private readonly usersService: UsersService,
+    private readonly userService: UserService,
   ) {
     const secret = configService.get<string>('JWT_REFRESH_SECRET');
 
@@ -36,7 +36,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
 
   async validate(req: Request, payload: any) {
     const refreshToken = req.cookies['refreshToken'];
-    const user = await this.usersService.findOne(payload.sub);
+    const user = await this.userService.findOne(payload.sub);
 
     if (!user || !user.refreshToken)
       throw new UnauthorizedException(
@@ -46,7 +46,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
     const tokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
 
     if (!tokenMatches) {
-      await this.usersService.removeRefreshToken(user.id);
+      await this.userService.removeRefreshToken(user.id);
       throw new UnauthorizedException('Refresh token mismatch.');
     }
 

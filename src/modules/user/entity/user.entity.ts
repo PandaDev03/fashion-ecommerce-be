@@ -9,7 +9,7 @@ export class User extends BaseEntity {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   password: string;
 
   @Column({ nullable: true })
@@ -27,6 +27,6 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   avatar: string;
 
-  @Column({ nullable: true, type: 'varchar' })
+  @Column({ name: 'refresh_token', nullable: true, type: 'varchar' })
   refreshToken: string | null;
 }

@@ -7,7 +7,10 @@ import { AppService } from './app.service';
 import { getDatabaseConfig } from './config/database.config';
 
 import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
+import { UserModule } from './modules/user/user.module';
+import { CategoryModule } from './modules/category/category.module';
+import { ProductModule } from './modules/product/product.module';
+import { BrandModule } from './modules/brand/brand.module';
 
 @Module({
   imports: [
@@ -21,7 +24,10 @@ import { UsersModule } from './modules/users/users.module';
       inject: [ConfigService],
     }),
     AuthModule,
-    UsersModule,
+    UserModule,
+    CategoryModule,
+    ProductModule,
+    BrandModule,
   ],
   controllers: [AppController],
   providers: [AppService],

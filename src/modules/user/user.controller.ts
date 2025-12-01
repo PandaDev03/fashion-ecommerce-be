@@ -9,17 +9,17 @@ import {
 import type { Response } from 'express';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UsersService } from './users.service';
+import { UserService } from './user.service';
 
 @Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMe(@Req() req: any, @Res() res: Response) {
     try {
-      const user = await this.usersService.findOne(req.user.userId);
+      const user = await this.userService.findOne(req.user.userId);
       if (!user) throw new UnauthorizedException();
 
       const { password, refreshToken, ...userInfo } = user;
