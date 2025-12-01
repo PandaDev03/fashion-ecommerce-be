@@ -16,7 +16,7 @@ export class CreateUserDto {
   name: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhât 8 ký tự' })
   password: string;
 
   @IsOptional()

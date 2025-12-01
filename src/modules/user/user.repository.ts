@@ -2,13 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { IUserQueries } from 'src/common/types/user';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
-import { IUserQueries } from 'src/common/types/user';
+import { User } from './entity/user.entity';
+import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 
 @Injectable()
-export class UsersRepository {
+export class UserRepository {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
@@ -23,9 +24,14 @@ export class UsersRepository {
     return await this.usersRepository.save(user);
   }
 
+  async createGoogleUser(createGoogleUser: CreateGoogleUserDto) {
+    const user = this.usersRepository.create(createGoogleUser);
+    return await this.usersRepository.save(user);
+  }
+
   async findOne(queries: IUserQueries) {
     const user = await this.usersRepository.findOne({ where: { ...queries } });
-    if (!user) throw new NotFoundException(`Không tìm thấy người dùng`);
+    // if (!user) throw new NotFoundException(`Không tìm thấy người dùng`);
 
     return user;
   }
