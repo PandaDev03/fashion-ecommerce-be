@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   InternalServerErrorException,
+  NotFoundException,
   Post,
   Req,
   Res,
@@ -11,11 +12,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
-import { AuthGuard } from '@nestjs/passport';
-import { UsersService } from '../users/users.service';
+import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
+import { SignInWIthGoogleDto } from './dto/sign-in-with-google.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -24,7 +26,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly usersService: UsersService,
+    private readonly userService: UserService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -43,7 +45,7 @@ export class AuthController {
     @Body(ValidationPipe) signUpDto: SignUpDto,
   ) {
     try {
-      const isEmailExisted = await this.usersService.checkEmailExisted(
+      const isEmailExisted = await this.userService.checkEmailExisted(
         signUpDto.email,
       );
 
@@ -74,17 +76,12 @@ export class AuthController {
   ) {
     try {
       const { email, password } = signInDto;
-
-      const expiresIn = this.configService.getOrThrow<string>(
-        'JWT_ACCESS_EXPIRES_IN',
-      );
-
       const user = await this.authService.validateUser(email, password);
+
       if (!user)
         throw new UnauthorizedException('Sai tên tài khoản hoặc mật khẩu');
 
       const result = await this.authService.signIn(signInDto);
-      console.log('sign in result', result);
 
       if (!result)
         return res.status(401).json({
@@ -121,6 +118,49 @@ export class AuthController {
     }
   }
 
+  @Post('/sign-in-with-google')
+  async signInWithGoogle(
+    @Res() res: Response,
+    @Body(ValidationPipe) signInWithGoogleDto: SignInWIthGoogleDto,
+  ) {
+    try {
+      const { accessToken } = signInWithGoogleDto;
+      const googleUser = await this.authService.verifyGoogleToken(accessToken);
+
+      if (!googleUser)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Google token không hợp lệ',
+        });
+
+      const user = await this.authService.findOrCreateGoogleUser(googleUser);
+      if (!user) throw new NotFoundException(`Không tìm thấy người dùng`);
+
+      const result = await this.authService.googleSignIn(user.email);
+
+      const isProd =
+        this.configService.get<string>('NODE_ENV') === 'production';
+      const maxAge = 7 * 24 * 60 * 60 * 1000;
+
+      res.cookie(
+        'refreshToken',
+        result.refreshToken,
+        this.getCookieOptions(maxAge, isProd),
+      );
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Đăng nhập thành công',
+        data: { accessToken: result.accessToken },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Đăng nhập thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
   @UseGuards(AuthGuard('jwt-refresh'))
   @Post('refresh')
   async refreshTokens(
@@ -128,9 +168,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { userId, userName } = req.user;
-
-    console.log(req.user);
-
     const newAccessToken = await this.authService.getAccessToken(
       userId,
       userName,
@@ -157,7 +194,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('sign-out')
   async signOut(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    await this.usersService.removeRefreshToken(req.user.userId);
+    await this.userService.removeRefreshToken(req.user.userId);
 
     res.clearCookie('refreshToken');
 
