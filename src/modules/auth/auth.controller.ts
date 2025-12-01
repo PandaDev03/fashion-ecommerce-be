@@ -78,9 +78,6 @@ export class AuthController {
       const expiresIn = this.configService.getOrThrow<string>(
         'JWT_ACCESS_EXPIRES_IN',
       );
-      console.log(
-        `[DEBUG] JWT_ACCESS_EXPIRES_IN read: '${expiresIn}' (Type: ${typeof expiresIn})`,
-      );
 
       const user = await this.authService.validateUser(email, password);
       if (!user)
@@ -132,6 +129,8 @@ export class AuthController {
   ) {
     const { userId, userName } = req.user;
 
+    console.log(req.user);
+
     const newAccessToken = await this.authService.getAccessToken(
       userId,
       userName,
@@ -153,7 +152,6 @@ export class AuthController {
       message: 'Làm mới token thành công',
       data: { accessToken: newAccessToken },
     });
-    // return { accessToken: newAccessToken };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -163,6 +161,8 @@ export class AuthController {
 
     res.clearCookie('refreshToken');
 
-    return { message: 'Đăng xuất thành công' };
+    return res
+      .status(200)
+      .json({ statusCode: 200, message: 'Đăng xuất thành công' });
   }
 }
