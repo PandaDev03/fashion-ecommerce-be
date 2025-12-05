@@ -7,43 +7,63 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entity/user.entity';
 import { CreateGoogleUserDto } from './dto/create-google-user.dto';
+import { Category } from '../category/entity/category.entity';
 
 @Injectable()
 export class UserRepository {
   constructor(
     @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async isEmailExisted(email: string) {
-    return (await this.usersRepository.countBy({ email })) > 0;
+    return (await this.userRepository.countBy({ email })) > 0;
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user = this.usersRepository.create(createUserDto);
-    return await this.usersRepository.save(user);
+    const user = this.userRepository.create(createUserDto);
+    return await this.userRepository.save(user);
   }
 
   async createGoogleUser(createGoogleUser: CreateGoogleUserDto) {
-    const user = this.usersRepository.create(createGoogleUser);
-    return await this.usersRepository.save(user);
+    const user = this.userRepository.create(createGoogleUser);
+    return await this.userRepository.save(user);
   }
 
-  async findOne(queries: IUserQueries) {
-    const user = await this.usersRepository.findOne({ where: { ...queries } });
+  async findOne(userQueries: IUserQueries) {
+    const { page, pageSize, ...queries } = userQueries;
+    const user = await this.userRepository.findOne({
+      where: { ...queries },
+      select: [
+        'id',
+        'name',
+        'email',
+        'password',
+        'birthday',
+        'phone',
+        'address',
+        'avatar',
+        'isActive',
+        'createdAt',
+        'createdBy',
+        'updatedAt',
+        'updatedBy',
+        'refreshToken',
+      ],
+    });
     // if (!user) throw new NotFoundException(`Không tìm thấy người dùng`);
 
     return user;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    await this.usersRepository.update(id, updateUserDto);
+    await this.userRepository.update(id, updateUserDto);
 
     return this.findOne({ id });
   }
 
   async remove(id: string) {
-    const result = await this.usersRepository.delete(id);
+    const result = await this.userRepository.delete(id);
 
     if (result.affected === 0)
       throw new NotFoundException(`User with ID ${id} not found`);

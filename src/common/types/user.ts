@@ -1,4 +1,4 @@
-export interface IUserQueries {
+export interface IUserQueries extends BaseQuery {
   id?: string;
   email?: string;
   name?: string;
