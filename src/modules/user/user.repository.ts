@@ -2,12 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { IUserQueries } from 'src/common/types/user';
+import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { GetUserDto } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entity/user.entity';
-import { CreateGoogleUserDto } from './dto/create-google-user.dto';
-import { Category } from '../category/entity/category.entity';
 
 @Injectable()
 export class UserRepository {
@@ -30,8 +29,8 @@ export class UserRepository {
     return await this.userRepository.save(user);
   }
 
-  async findOne(userQueries: IUserQueries) {
-    const { page, pageSize, ...queries } = userQueries;
+  async findOne(getUserDto: GetUserDto) {
+    const { page, pageSize, ...queries } = getUserDto;
     const user = await this.userRepository.findOne({
       where: { ...queries },
       select: [

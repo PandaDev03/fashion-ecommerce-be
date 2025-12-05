@@ -1,24 +1,23 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
+  Put,
   Query,
-  Res,
   Request,
+  Res,
   UnauthorizedException,
   UseGuards,
-  Put,
-  Delete,
-  Param,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
-import type { ICategoryQueries } from 'src/common/types/category';
+import { createPaginatedResponse } from 'src/common/utils/function';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { createPaginatedResponse } from 'src/common/utils/function';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
