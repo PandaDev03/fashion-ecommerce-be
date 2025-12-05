@@ -167,39 +167,54 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { userId, userName } = req.user;
-    const newAccessToken = await this.authService.getAccessToken(
-      userId,
-      userName,
-    );
-    const newRefreshToken =
-      await this.authService.getAndSaveRefreshToken(userId);
+    try {
+      const { userId, userName } = req.user;
+      const newAccessToken = await this.authService.getAccessToken(
+        userId,
+        userName,
+      );
+      const newRefreshToken =
+        await this.authService.getAndSaveRefreshToken(userId);
 
-    const isProd = this.configService.get<string>('NODE_ENV') === 'production';
-    const maxAge = 7 * 24 * 60 * 60 * 1000;
+      const isProd =
+        this.configService.get<string>('NODE_ENV') === 'production';
+      const maxAge = 7 * 24 * 60 * 60 * 1000;
 
-    res.cookie(
-      'refreshToken',
-      newRefreshToken,
-      this.getCookieOptions(maxAge, isProd),
-    );
+      res.cookie(
+        'refreshToken',
+        newRefreshToken,
+        this.getCookieOptions(maxAge, isProd),
+      );
 
-    return res.status(200).json({
-      statusCode: 200,
-      message: 'Làm mới token thành công',
-      data: { accessToken: newAccessToken },
-    });
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Làm mới token thành công',
+        data: { accessToken: newAccessToken },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Refresh token thất bại: ${error?.message ?? error}`,
+      });
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('sign-out')
   async signOut(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    await this.userService.removeRefreshToken(req.user.userId);
+    try {
+      await this.userService.removeRefreshToken(req.user.userId);
 
-    res.clearCookie('refreshToken');
+      res.clearCookie('refreshToken');
 
-    return res
-      .status(200)
-      .json({ statusCode: 200, message: 'Đăng xuất thành công' });
+      return res
+        .status(200)
+        .json({ statusCode: 200, message: 'Đăng xuất thành công' });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Đăng xuất thất bại: ${error?.message ?? error}`,
+      });
+    }
   }
 }
