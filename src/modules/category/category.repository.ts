@@ -9,8 +9,8 @@ import { Repository } from 'typeorm';
 import { getSkipTakeParams } from 'src/common/utils/function';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
-import { Category } from './entity/category.entity';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Category } from './entity/category.entity';
 
 @Injectable()
 export class CategoryRepository {
@@ -50,14 +50,10 @@ export class CategoryRepository {
       .leftJoinAndSelect('category.creator', 'creator')
       .leftJoinAndSelect('category.updater', 'updater');
 
-    console.log('parentIds', parentIds);
-
     if (parentIds && parentIds.length > 0)
       queryBuilder.andWhere('category.parent_id IN (:...parentIds)', {
         parentIds,
       });
-
-    console.log('queries', queries);
 
     Object.entries(queries).forEach(([key, value]) => {
       if (value !== undefined && value !== null)
