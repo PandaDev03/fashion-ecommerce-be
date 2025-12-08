@@ -2,6 +2,7 @@ import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsDate,
   IsOptional,
   IsString,
   IsUUID,
@@ -28,4 +29,12 @@ export class GetCategoryDto extends BaseQueryDto {
   @IsArray()
   @IsUUID('4', { each: true })
   parentIds?: string[];
+
+  @IsOptional()
+  @IsDate()
+  createdFrom?: Date;
+
+  @IsOptional()
+  @IsDate()
+  createdTo?: Date;
 }

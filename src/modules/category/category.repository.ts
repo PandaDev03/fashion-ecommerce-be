@@ -42,7 +42,15 @@ export class CategoryRepository {
   }
 
   async findAll(getCategoryDto: GetCategoryDto) {
-    const { page, pageSize, search, parentIds, ...queries } = getCategoryDto;
+    const {
+      page,
+      pageSize,
+      search,
+      parentIds,
+      createdFrom,
+      createdTo,
+      ...queries
+    } = getCategoryDto;
 
     const queryBuilder = this.categoryRepository
       .createQueryBuilder('category')
@@ -50,21 +58,31 @@ export class CategoryRepository {
       .leftJoinAndSelect('category.creator', 'creator')
       .leftJoinAndSelect('category.updater', 'updater');
 
+    if (search && search.trim() !== '')
+      queryBuilder.andWhere(
+        '(category.name LIKE :search OR category.slug LIKE :search)',
+        { search: `%${search}%` },
+      );
+
     if (parentIds && parentIds.length > 0)
       queryBuilder.andWhere('category.parent_id IN (:...parentIds)', {
         parentIds,
+      });
+
+    if (createdFrom)
+      queryBuilder.andWhere('category.createdAt >= :createdFrom', {
+        createdFrom,
+      });
+
+    if (createdTo)
+      queryBuilder.andWhere('category.createdAt <= :createdTo', {
+        createdTo,
       });
 
     Object.entries(queries).forEach(([key, value]) => {
       if (value !== undefined && value !== null)
         queryBuilder.andWhere(`category.${key} = :${key}`, { [key]: value });
     });
-
-    if (search && search.trim() !== '')
-      queryBuilder.andWhere(
-        '(category.name LIKE :search OR category.slug LIKE :search)',
-        { search: `%${search}%` },
-      );
 
     queryBuilder.loadRelationCountAndMap(
       'category.childrenCount',
