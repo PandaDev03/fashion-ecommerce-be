@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -13,11 +13,13 @@ import { BaseQueryDto } from 'src/common/dto/base-query.dto';
 export class GetCategoryDto extends BaseQueryDto {
   @Transform(({ value }) => value === 'true')
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({
+    message: 'Trường "parent" phải là giá trị boolean (true/false)',
+  })
   parent?: boolean;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Trường tìm kiếm "search" phải là chuỗi ký tự' })
   search?: string;
 
   @Transform(({ value }) => {
@@ -26,15 +28,24 @@ export class GetCategoryDto extends BaseQueryDto {
     return value;
   })
   @IsOptional()
-  @IsArray()
-  @IsUUID('4', { each: true })
+  @IsArray({ message: 'Danh sách ID cha "parentIds" phải là một mảng' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Mỗi ID trong "parentIds" phải là định dạng UUID v4 hợp lệ',
+  })
   parentIds?: string[];
 
   @IsOptional()
-  @IsDate()
+  @IsDate({
+    message: 'Ngày tạo từ "createdFrom" phải là định dạng ngày tháng hợp lệ',
+  })
+  @Type(() => Date)
   createdFrom?: Date;
 
   @IsOptional()
-  @IsDate()
+  @IsDate({
+    message: 'Ngày tạo đến "createdTo" phải là định dạng ngày tháng hợp lệ',
+  })
+  @Type(() => Date)
   createdTo?: Date;
 }
