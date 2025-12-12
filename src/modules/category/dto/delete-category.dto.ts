@@ -1,8 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsUUID } from 'class-validator';
-import { CreateCategoryDto } from './create-category.dto';
 
-export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
+export class DeleteCategoryDto {
   @IsNotEmpty({ message: 'Vui lòng cung cấp ID của danh mục' })
   @IsUUID('4', { message: 'ID danh mục phải là định dạng UUID hợp lệ' })
   id: string;

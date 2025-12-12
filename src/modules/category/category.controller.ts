@@ -18,42 +18,13 @@ import type { Response } from 'express';
 import { createPaginatedResponse } from 'src/common/utils/function';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { DeleteCategoryDto } from './dto/delete-category.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
-
-  @Post()
-  @UseGuards(AuthGuard('jwt'))
-  async create(
-    @Res() res: Response,
-    @Request() request: any,
-    @Body() createCategoryDto: CreateCategoryDto,
-  ) {
-    try {
-      const result = await this.categoryService.create({
-        createdBy: request.user.userId,
-        variables: createCategoryDto,
-      });
-
-      if (!result)
-        return res.status(401).json({
-          statusCode: 401,
-          message: 'Tạo danh mục không thành công',
-        });
-
-      return res
-        .status(200)
-        .json({ statusCode: 200, message: 'Tạo danh mục thành công' });
-    } catch (error) {
-      return res.status(500).json({
-        statusCode: 500,
-        message: `Tạo mới danh mục thất bại: ${error?.message ?? error}`,
-      });
-    }
-  }
 
   @Get()
   @UseGuards(AuthGuard('jwt'))
@@ -106,6 +77,36 @@ export class CategoryController {
     }
   }
 
+  @Post()
+  @UseGuards(AuthGuard('jwt'))
+  async create(
+    @Res() res: Response,
+    @Request() request: any,
+    @Body() createCategoryDto: CreateCategoryDto,
+  ) {
+    try {
+      const result = await this.categoryService.create({
+        createdBy: request.user.userId,
+        variables: createCategoryDto,
+      });
+
+      if (!result)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Tạo danh mục không thành công',
+        });
+
+      return res
+        .status(200)
+        .json({ statusCode: 200, message: 'Tạo danh mục thành công' });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Tạo mới danh mục thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
   @Put()
   @UseGuards(AuthGuard('jwt'))
   async updateCategory(
@@ -126,7 +127,7 @@ export class CategoryController {
 
       return res
         .status(200)
-        .json({ statusCode: 500, message: 'Cập nhật danh mục thành công' });
+        .json({ statusCode: 200, message: 'Cập nhật danh mục thành công' });
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
@@ -137,9 +138,12 @@ export class CategoryController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
-  async deleteCategory(@Res() res: Response, @Param('id') id: string) {
+  async deleteCategory(
+    @Res() res: Response,
+    @Param() deleteCategoryDto: DeleteCategoryDto,
+  ) {
     try {
-      const result = await this.categoryService.delete(id);
+      const result = await this.categoryService.delete(deleteCategoryDto.id);
 
       if (!result)
         return res
