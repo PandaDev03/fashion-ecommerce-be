@@ -3,14 +3,14 @@ import { BaseQueryDto } from 'src/common/dto/base-query.dto';
 
 export class GetUserDto extends BaseQueryDto {
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4', { message: 'ID phải là định dạng UUID hợp lệ' })
   id?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'Email phải là định dạng email hợp lệ' })
   email?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Tên tìm kiếm phải là chuỗi ký tự' })
   name?: string;
 }
