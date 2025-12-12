@@ -6,7 +6,7 @@ import { User } from 'src/modules/user/entity/user.entity';
 
 @Entity('brands')
 export class Brand extends BaseEntity {
-  @Column({ length: 255 })
+  @Column({ length: 255, unique: true })
   name: string;
 
   @Column({ length: 255, unique: true })
