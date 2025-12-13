@@ -19,6 +19,7 @@ import { createPaginatedResponse } from 'src/common/utils/function';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { DeleteCategoryDto } from './dto/delete-category.dto';
+import { DeleteManyCategoryDto } from './dto/delete-many-category.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -132,6 +133,34 @@ export class CategoryController {
       return res.status(500).json({
         statusCode: 500,
         message: `Lấy thông tin thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Delete('/many')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteMany(
+    @Res() res: Response,
+    @Body() deleteManyCategoryDto: DeleteManyCategoryDto,
+  ) {
+    try {
+      const affectedCount = await this.categoryService.deleteMany(
+        deleteManyCategoryDto,
+      );
+
+      let message = '';
+      const totalIds = deleteManyCategoryDto.ids.length;
+
+      if (affectedCount === totalIds)
+        message = `Xóa thành công ${affectedCount} danh mục.`;
+      else
+        message = `Xóa thành công ${affectedCount} trên tổng số ${totalIds} danh mục yêu cầu. Một số ID không tồn tại.`;
+
+      return res.status(200).json({ statusCode: 200, message });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Xóa danh mục thất bại: ${error?.message ?? error}`,
       });
     }
   }

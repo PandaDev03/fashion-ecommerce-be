@@ -153,4 +153,9 @@ export class CategoryRepository {
     const result = (await this.categoryRepository.delete(id)).affected;
     return (result ?? 0) > 0;
   }
+
+  async deleteMany(ids: string[]) {
+    const result = (await this.categoryRepository.delete(ids)).affected;
+    return result ?? 0;
+  }
 }

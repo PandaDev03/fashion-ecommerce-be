@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { CategoryRepository } from './category.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { DeleteManyCategoryDto } from './dto/delete-many-category.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -31,5 +32,10 @@ export class CategoryService {
 
   async delete(id: string) {
     return await this.categoryRepository.delete(id);
+  }
+
+  async deleteMany(deleteManyCategoryDto: DeleteManyCategoryDto) {
+    const { ids } = deleteManyCategoryDto;
+    return await this.categoryRepository.deleteMany(ids);
   }
 }
