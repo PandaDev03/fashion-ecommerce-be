@@ -5,6 +5,8 @@ export class UpdateProductDto {
   name?: string;
   description?: string;
   slug?: string;
+  parentPrice?: number;
+  parentStock?: number;
   categoryId?: string;
   brandId?: string;
   

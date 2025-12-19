@@ -6,6 +6,7 @@ import { GetProductBySlugDto } from './dto/get-product-by-slug.dto';
 import { GetProductDto } from './dto/get-product.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductImage } from './entities/product-image.entity';
 import { ProductOptionValue } from './entities/product-option-value.entity';
 import { ProductOption } from './entities/product-option.entity';
 import { ProductVariantImageMapping } from './entities/product-variant-image-mapping.entity';
@@ -397,6 +398,224 @@ export class ProductService {
     });
   }
 
+  // async update(updateProductDto: IUpdate<UpdateProductDto>) {
+  //   return await this.dataSource.transaction(async (manager) => {
+  //     const { updatedBy, variables } = updateProductDto;
+  //     const {
+  //       productId,
+  //       name,
+  //       description,
+  //       slug,
+  //       categoryId,
+  //       brandId,
+  //       variantId,
+  //       price,
+  //       stock,
+  //       status,
+  //       position,
+  //       images,
+  //     } = variables;
+
+  //     const productRepo = manager.getRepository(Product);
+  //     const variantRepo = manager.getRepository(ProductVariant);
+  //     const mappingRepo = manager.getRepository(ProductVariantImageMapping);
+  //     const imageRepo = manager.getRepository(ProductVariantImage);
+
+  //     // 1. Update thông tin Product
+  //     const productData: any = {};
+  //     if (name !== undefined) productData.name = name;
+  //     if (description !== undefined) productData.description = description;
+  //     if (slug !== undefined) productData.slug = slug;
+  //     if (categoryId !== undefined) productData.categoryId = categoryId;
+  //     if (brandId !== undefined) productData.brandId = brandId;
+
+  //     if (Object.keys(productData).length > 0) {
+  //       await productRepo
+  //         .createQueryBuilder()
+  //         .update()
+  //         .set({
+  //           ...productData,
+  //           updatedBy,
+  //         })
+  //         .where('id = :productId', { productId })
+  //         .execute();
+  //     }
+
+  //     // 2. Update thông tin Variant (price, stock, status, position)
+  //     const variantData: any = {};
+  //     if (price !== undefined) variantData.price = price;
+  //     if (stock !== undefined) variantData.stock = stock;
+  //     if (status !== undefined) variantData.status = status;
+  //     if (position !== undefined) variantData.position = position;
+
+  //     if (variantId && Object.keys(variantData).length > 0) {
+  //       await variantRepo
+  //         .createQueryBuilder()
+  //         .update()
+  //         .set({
+  //           ...variantData,
+  //           updatedBy,
+  //         })
+  //         .where('id = :variantId', { variantId })
+  //         .execute();
+  //     }
+
+  //     // 3. Update Images cho TẤT CẢ variants cùng màu
+  //     if (variantId && images !== undefined) {
+  //       // Lấy colorOptionValueId từ variant hiện tại
+  //       const colorOptionValueId = await this.getColorOptionValueIdFromVariant(
+  //         manager,
+  //         variantId,
+  //         productId,
+  //       );
+
+  //       // Lấy tất cả variants có cùng màu sắc
+  //       let variantsToUpdate: ProductVariant[] = [];
+
+  //       if (colorOptionValueId) {
+  //         variantsToUpdate = await this.getVariantsBySameColor(
+  //           manager,
+  //           productId,
+  //           colorOptionValueId,
+  //         );
+  //       } else {
+  //         // Nếu không tìm thấy color option, chỉ update variant hiện tại
+  //         const variant = await variantRepo.findOne({
+  //           where: { id: variantId },
+  //         });
+  //         if (variant) {
+  //           variantsToUpdate = [variant];
+  //         }
+  //       }
+
+  //       // Xử lý từng variant
+  //       for (const variant of variantsToUpdate) {
+  //         const currentVariantId = variant.id;
+
+  //         // Lấy mappings và imageIds cũ
+  //         const oldMappings = await mappingRepo
+  //           .createQueryBuilder('mapping')
+  //           .where('mapping.variantId = :variantId', {
+  //             variantId: currentVariantId,
+  //           })
+  //           .getMany();
+
+  //         const oldImageIds = oldMappings.map((m) => m.imageId);
+
+  //         const imageIdsToKeep = images
+  //           .filter((img) => img.imageId)
+  //           .map((img) => img.imageId);
+
+  //         const imageIdsToDelete = oldImageIds.filter(
+  //           (id) => !imageIdsToKeep.includes(id),
+  //         );
+
+  //         // Xóa tất cả mappings cũ của variant này
+  //         await mappingRepo
+  //           .createQueryBuilder()
+  //           .delete()
+  //           .where('variantId = :variantId', { variantId: currentVariantId })
+  //           .execute();
+
+  //         // Xóa các images không còn được sử dụng
+  //         // CHÚ Ý: Chỉ xóa image nếu không còn variant nào khác sử dụng
+  //         if (imageIdsToDelete.length > 0) {
+  //           for (const imageId of imageIdsToDelete) {
+  //             const mappingCount = await mappingRepo
+  //               .createQueryBuilder('mapping')
+  //               .where('mapping.imageId = :imageId', { imageId })
+  //               .getCount();
+
+  //             // Nếu không còn mapping nào tham chiếu đến image này, xóa image
+  //             if (mappingCount === 0) {
+  //               await imageRepo
+  //                 .createQueryBuilder()
+  //                 .delete()
+  //                 .where('id = :imageId', { imageId })
+  //                 .execute();
+  //             }
+  //           }
+  //         }
+
+  //         // Tạo mappings mới cho variant này
+  //         for (let i = 0; i < images.length; i++) {
+  //           const imageDto = images[i];
+  //           let imageId = imageDto.imageId;
+
+  //           // Nếu là image mới (chưa có imageId), tạo image mới
+  //           // Nhưng chỉ tạo 1 lần cho variant đầu tiên, các variant sau dùng chung
+  //           if (!imageId) {
+  //             // Kiểm tra xem image này đã được tạo chưa (dựa vào URL)
+  //             const existingImage = await imageRepo
+  //               .createQueryBuilder('image')
+  //               .where('image.url = :url', { url: imageDto.url })
+  //               .getOne();
+
+  //             if (existingImage) {
+  //               imageId = existingImage.id;
+  //             } else {
+  //               const insertResult = await imageRepo
+  //                 .createQueryBuilder()
+  //                 .insert()
+  //                 .values({
+  //                   url: imageDto.url,
+  //                   position: i,
+  //                   createdBy: updatedBy,
+  //                   updatedBy: updatedBy,
+  //                 })
+  //                 .execute();
+
+  //               imageId = insertResult.identifiers[0].id;
+  //             }
+  //           }
+
+  //           // Tạo mapping mới
+  //           await mappingRepo
+  //             .createQueryBuilder()
+  //             .insert()
+  //             .values({
+  //               variantId: currentVariantId,
+  //               imageId,
+  //               position: i,
+  //               createdBy: updatedBy,
+  //               updatedBy: updatedBy,
+  //             })
+  //             .execute();
+  //         }
+  //       }
+  //     }
+
+  //     return {
+  //       success: true,
+  //       affected: {
+  //         product: Object.keys(productData).length > 0 ? 1 : 0,
+  //         variant: variantId && Object.keys(variantData).length > 0 ? 1 : 0,
+  //         images: images ? images.length : 0,
+  //         variantsUpdated:
+  //           variantId && images !== undefined
+  //             ? (await this.getColorOptionValueIdFromVariant(
+  //                 manager,
+  //                 variantId,
+  //                 productId,
+  //               ))
+  //               ? (
+  //                   await this.getVariantsBySameColor(
+  //                     manager,
+  //                     productId,
+  //                     await this.getColorOptionValueIdFromVariant(
+  //                       manager,
+  //                       variantId,
+  //                       productId,
+  //                     ),
+  //                   )
+  //                 )?.length
+  //               : 1
+  //             : 0,
+  //       },
+  //     };
+  //   });
+  // }
+
   async update(updateProductDto: IUpdate<UpdateProductDto>) {
     return await this.dataSource.transaction(async (manager) => {
       const { updatedBy, variables } = updateProductDto;
@@ -408,7 +627,9 @@ export class ProductService {
         categoryId,
         brandId,
         variantId,
+        parentPrice,
         price,
+        parentStock,
         stock,
         status,
         position,
@@ -417,16 +638,21 @@ export class ProductService {
 
       const productRepo = manager.getRepository(Product);
       const variantRepo = manager.getRepository(ProductVariant);
-      const mappingRepo = manager.getRepository(ProductVariantImageMapping);
-      const imageRepo = manager.getRepository(ProductVariantImage);
+      const variantMappingRepo = manager.getRepository(
+        ProductVariantImageMapping,
+      );
+      const variantImageRepo = manager.getRepository(ProductVariantImage);
+      const productImageRepo = manager.getRepository(ProductImage);
 
       // 1. Update thông tin Product
       const productData: any = {};
       if (name !== undefined) productData.name = name;
-      if (description !== undefined) productData.description = description;
       if (slug !== undefined) productData.slug = slug;
-      if (categoryId !== undefined) productData.categoryId = categoryId;
       if (brandId !== undefined) productData.brandId = brandId;
+      if (categoryId !== undefined) productData.categoryId = categoryId;
+      if (parentPrice !== undefined) productData.price = parentPrice;
+      if (parentStock !== undefined) productData.stock = parentStock;
+      if (description !== undefined) productData.description = description;
 
       if (Object.keys(productData).length > 0) {
         await productRepo
@@ -440,7 +666,196 @@ export class ProductService {
           .execute();
       }
 
-      // 2. Update thông tin Variant (price, stock, status, position)
+      // 2. Kiểm tra product có variant hay không
+      const variantCount = await variantRepo
+        .createQueryBuilder('variant')
+        .where('variant.productId = :productId', { productId })
+        .getCount();
+
+      const hasVariants = variantCount > 0;
+
+      // 3. Xử lý Images
+      if (images !== undefined) {
+        if (!hasVariants) {
+          // ========== TRƯỜNG HỢP 1: Product KHÔNG có variant ==========
+          // Lưu vào ProductImage
+
+          // Lấy images cũ
+          const oldProductImages = await productImageRepo
+            .createQueryBuilder('image')
+            .where('image.productId = :productId', { productId })
+            .getMany();
+
+          const oldImageIds = oldProductImages.map((img) => img.id);
+
+          const imageIdsToKeep = images
+            .filter((img) => img.imageId)
+            .map((img) => img.imageId);
+
+          const imageIdsToDelete = oldImageIds.filter(
+            (id) => !imageIdsToKeep.includes(id),
+          );
+
+          // Xóa images cũ không còn sử dụng
+          if (imageIdsToDelete.length > 0) {
+            await productImageRepo
+              .createQueryBuilder()
+              .delete()
+              .where('id IN (:...ids)', { ids: imageIdsToDelete })
+              .execute();
+          }
+
+          // Tạo hoặc update images mới
+          for (let i = 0; i < images.length; i++) {
+            const imageDto = images[i];
+
+            if (imageDto.imageId) {
+              // Update image hiện có
+              await productImageRepo
+                .createQueryBuilder()
+                .update()
+                .set({
+                  position: i,
+                  updatedBy,
+                })
+                .where('id = :imageId', { imageId: imageDto.imageId })
+                .execute();
+            } else {
+              // Tạo image mới
+              await productImageRepo
+                .createQueryBuilder()
+                .insert()
+                .values({
+                  productId,
+                  url: imageDto.url,
+                  position: i,
+                  createdBy: updatedBy,
+                  updatedBy: updatedBy,
+                })
+                .execute();
+            }
+          }
+        } else if (variantId) {
+          // ========== TRƯỜNG HỢP 2: Product CÓ variant ==========
+          // Update cho TẤT CẢ variants cùng màu
+
+          const colorOptionValueId =
+            await this.getColorOptionValueIdFromVariant(
+              manager,
+              variantId,
+              productId,
+            );
+
+          let variantsToUpdate: ProductVariant[] = [];
+
+          if (colorOptionValueId) {
+            variantsToUpdate = await this.getVariantsBySameColor(
+              manager,
+              productId,
+              colorOptionValueId,
+            );
+          } else {
+            const variant = await variantRepo.findOne({
+              where: { id: variantId },
+            });
+            if (variant) {
+              variantsToUpdate = [variant];
+            }
+          }
+
+          // Xử lý từng variant
+          for (const variant of variantsToUpdate) {
+            const currentVariantId = variant.id;
+
+            // Lấy mappings và imageIds cũ
+            const oldMappings = await variantMappingRepo
+              .createQueryBuilder('mapping')
+              .where('mapping.variantId = :variantId', {
+                variantId: currentVariantId,
+              })
+              .getMany();
+
+            const oldImageIds = oldMappings.map((m) => m.imageId);
+
+            const imageIdsToKeep = images
+              .filter((img) => img.imageId)
+              .map((img) => img.imageId);
+
+            const imageIdsToDelete = oldImageIds.filter(
+              (id) => !imageIdsToKeep.includes(id),
+            );
+
+            // Xóa tất cả mappings cũ
+            await variantMappingRepo
+              .createQueryBuilder()
+              .delete()
+              .where('variantId = :variantId', { variantId: currentVariantId })
+              .execute();
+
+            // Xóa images không còn được sử dụng
+            if (imageIdsToDelete.length > 0) {
+              for (const imageId of imageIdsToDelete) {
+                const mappingCount = await variantMappingRepo
+                  .createQueryBuilder('mapping')
+                  .where('mapping.imageId = :imageId', { imageId })
+                  .getCount();
+
+                if (mappingCount === 0) {
+                  await variantImageRepo
+                    .createQueryBuilder()
+                    .delete()
+                    .where('id = :imageId', { imageId })
+                    .execute();
+                }
+              }
+            }
+
+            // Tạo mappings mới
+            for (let i = 0; i < images.length; i++) {
+              const imageDto = images[i];
+              let imageId = imageDto.imageId;
+
+              if (!imageId) {
+                const existingImage = await variantImageRepo
+                  .createQueryBuilder('image')
+                  .where('image.url = :url', { url: imageDto.url })
+                  .getOne();
+
+                if (existingImage) {
+                  imageId = existingImage.id;
+                } else {
+                  const insertResult = await variantImageRepo
+                    .createQueryBuilder()
+                    .insert()
+                    .values({
+                      url: imageDto.url,
+                      position: i,
+                      createdBy: updatedBy,
+                      updatedBy: updatedBy,
+                    })
+                    .execute();
+
+                  imageId = insertResult.identifiers[0].id;
+                }
+              }
+
+              await variantMappingRepo
+                .createQueryBuilder()
+                .insert()
+                .values({
+                  variantId: currentVariantId,
+                  imageId,
+                  position: i,
+                  createdBy: updatedBy,
+                  updatedBy: updatedBy,
+                })
+                .execute();
+            }
+          }
+        }
+      }
+
+      // 4. Update thông tin Variant (price, stock, status, position)
       const variantData: any = {};
       if (price !== undefined) variantData.price = price;
       if (stock !== undefined) variantData.stock = stock;
@@ -459,131 +874,6 @@ export class ProductService {
           .execute();
       }
 
-      // 3. Update Images cho TẤT CẢ variants cùng màu
-      if (variantId && images !== undefined) {
-        // Lấy colorOptionValueId từ variant hiện tại
-        const colorOptionValueId = await this.getColorOptionValueIdFromVariant(
-          manager,
-          variantId,
-          productId,
-        );
-
-        // Lấy tất cả variants có cùng màu sắc
-        let variantsToUpdate: ProductVariant[] = [];
-
-        if (colorOptionValueId) {
-          variantsToUpdate = await this.getVariantsBySameColor(
-            manager,
-            productId,
-            colorOptionValueId,
-          );
-        } else {
-          // Nếu không tìm thấy color option, chỉ update variant hiện tại
-          const variant = await variantRepo.findOne({
-            where: { id: variantId },
-          });
-          if (variant) {
-            variantsToUpdate = [variant];
-          }
-        }
-
-        // Xử lý từng variant
-        for (const variant of variantsToUpdate) {
-          const currentVariantId = variant.id;
-
-          // Lấy mappings và imageIds cũ
-          const oldMappings = await mappingRepo
-            .createQueryBuilder('mapping')
-            .where('mapping.variantId = :variantId', {
-              variantId: currentVariantId,
-            })
-            .getMany();
-
-          const oldImageIds = oldMappings.map((m) => m.imageId);
-
-          const imageIdsToKeep = images
-            .filter((img) => img.imageId)
-            .map((img) => img.imageId);
-
-          const imageIdsToDelete = oldImageIds.filter(
-            (id) => !imageIdsToKeep.includes(id),
-          );
-
-          // Xóa tất cả mappings cũ của variant này
-          await mappingRepo
-            .createQueryBuilder()
-            .delete()
-            .where('variantId = :variantId', { variantId: currentVariantId })
-            .execute();
-
-          // Xóa các images không còn được sử dụng
-          // CHÚ Ý: Chỉ xóa image nếu không còn variant nào khác sử dụng
-          if (imageIdsToDelete.length > 0) {
-            for (const imageId of imageIdsToDelete) {
-              const mappingCount = await mappingRepo
-                .createQueryBuilder('mapping')
-                .where('mapping.imageId = :imageId', { imageId })
-                .getCount();
-
-              // Nếu không còn mapping nào tham chiếu đến image này, xóa image
-              if (mappingCount === 0) {
-                await imageRepo
-                  .createQueryBuilder()
-                  .delete()
-                  .where('id = :imageId', { imageId })
-                  .execute();
-              }
-            }
-          }
-
-          // Tạo mappings mới cho variant này
-          for (let i = 0; i < images.length; i++) {
-            const imageDto = images[i];
-            let imageId = imageDto.imageId;
-
-            // Nếu là image mới (chưa có imageId), tạo image mới
-            // Nhưng chỉ tạo 1 lần cho variant đầu tiên, các variant sau dùng chung
-            if (!imageId) {
-              // Kiểm tra xem image này đã được tạo chưa (dựa vào URL)
-              const existingImage = await imageRepo
-                .createQueryBuilder('image')
-                .where('image.url = :url', { url: imageDto.url })
-                .getOne();
-
-              if (existingImage) {
-                imageId = existingImage.id;
-              } else {
-                const insertResult = await imageRepo
-                  .createQueryBuilder()
-                  .insert()
-                  .values({
-                    url: imageDto.url,
-                    position: i,
-                    createdBy: updatedBy,
-                    updatedBy: updatedBy,
-                  })
-                  .execute();
-
-                imageId = insertResult.identifiers[0].id;
-              }
-            }
-
-            // Tạo mapping mới
-            await mappingRepo
-              .createQueryBuilder()
-              .insert()
-              .values({
-                variantId: currentVariantId,
-                imageId,
-                position: i,
-                createdBy: updatedBy,
-                updatedBy: updatedBy,
-              })
-              .execute();
-          }
-        }
-      }
-
       return {
         success: true,
         affected: {
@@ -591,7 +881,7 @@ export class ProductService {
           variant: variantId && Object.keys(variantData).length > 0 ? 1 : 0,
           images: images ? images.length : 0,
           variantsUpdated:
-            variantId && images !== undefined
+            hasVariants && variantId && images !== undefined
               ? (await this.getColorOptionValueIdFromVariant(
                   manager,
                   variantId,
