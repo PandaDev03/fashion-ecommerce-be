@@ -18,7 +18,9 @@ export const cloudinaryStorageImage = new CloudinaryStorage({
   params: async (req, file) => {
     return {
       folder: 'fashion-ecommerce/images',
-      allowedFormats: ['jpg', 'png', 'svg'],
+      allowedFormats: ['jpg', 'png', 'jpeg', 'webp', 'svg'],
+      transformation: [{ width: 500, height: 500, crop: 'limit' }],
+      public_id: `logo-${Date.now()}-${file.originalname.split('.')[0]}`,
     };
   },
 });

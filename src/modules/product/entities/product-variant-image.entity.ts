@@ -1,25 +1,28 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { ProductVariant } from './product-variant.entity';
+import { ProductVariantImageMapping } from './product-variant-image-mapping.entity';
 
 @Entity('product_variant_images')
 export class ProductVariantImage extends BaseEntity {
-  @Column({ name: 'variant_id' })
-  variantId: string;
+  // @Column({ name: 'variant_id' })
+  // variantId: string;
 
   @Column({ length: 500 })
   url: string;
 
-  @Column({ name: 'alt_text', length: 255, nullable: true })
-  altText?: string;
+  // @Column({ name: 'alt_text', length: 255, nullable: true })
+  // altText?: string;
 
   @Column({ type: 'int', default: 0 })
   position: number;
 
-  @ManyToOne(() => ProductVariant, (variant) => variant.images, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'variant_id' })
-  variant?: ProductVariant;
+  // @ManyToOne(() => ProductVariant, (variant) => variant.images, {
+  //   onDelete: 'CASCADE',
+  // })
+  // @JoinColumn({ name: 'variant_id' })
+  // variant?: ProductVariant;
+
+  @OneToMany(() => ProductVariantImageMapping, (mapping) => mapping.image)
+  variantMappings?: ProductVariantImageMapping[];
 }

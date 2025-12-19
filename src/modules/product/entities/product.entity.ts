@@ -3,9 +3,10 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Brand } from 'src/modules/brand/entity/brand.entity';
 import { Category } from 'src/modules/category/entity/category.entity';
-import { ProductImage } from 'src/modules/product/entities/product-image.entity';
-import { ProductOption } from 'src/modules/product/entities/product-option.entity';
-import { ProductVariant } from 'src/modules/product/entities/product-variant.entity';
+import { ProductImage } from './product-image.entity';
+import { ProductOption } from './product-option.entity';
+import { ProductVariant } from './product-variant.entity';
+import { User } from 'src/modules/user/entity/user.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
@@ -21,13 +22,27 @@ export class Product extends BaseEntity {
   @Column({ name: 'category_id' })
   categoryId: string;
 
-  @Column({ name: 'brand_id', nullable: true })
-  brandId?: string;
+  @Column({ name: 'brand_id' })
+  brandId: string;
+
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  })
+  price?: number;
+
+  @Column({ type: 'int', nullable: true })
+  stock?: number;
+
+  @Column({ name: 'has_variants', type: 'boolean', default: false })
+  hasVariants: boolean;
 
   @Column({
     type: 'enum',
     enum: ['active', 'inactive', 'draft'],
-    default: 'draft',
+    default: 'active',
   })
   status: 'active' | 'inactive' | 'draft';
 
@@ -51,4 +66,12 @@ export class Product extends BaseEntity {
 
   @OneToMany(() => ProductImage, (image) => image.product)
   images?: ProductImage[];
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by' })
+  creator: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'updated_by' })
+  updater: User;
 }

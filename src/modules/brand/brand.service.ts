@@ -15,6 +15,10 @@ export class BrandService {
     return await this.brandRepository.findAll(getBrandDto);
   }
 
+  async findOptions() {
+    return await this.brandRepository.findOptions();
+  }
+
   async create(createBrandDto: ICreate<CreateBrandDto>) {
     return await this.brandRepository.create(createBrandDto);
   }
