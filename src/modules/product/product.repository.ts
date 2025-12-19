@@ -19,20 +19,50 @@ export class ProductRepository {
 
     const queryBuilder = this.productRepository.createQueryBuilder('product');
 
-    queryBuilder
-      .leftJoinAndSelect('product.creator', 'creator')
-      .leftJoinAndSelect('product.updater', 'updater');
+    // queryBuilder
+    //   .leftJoinAndSelect('product.creator', 'creator')
+    //   .leftJoinAndSelect('product.updater', 'updater');
 
-    queryBuilder
-      .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.brand', 'brand')
-      .leftJoinAndSelect('product.images', 'images');
+    // queryBuilder
+    //   .leftJoinAndSelect('product.category', 'category')
+    //   .leftJoinAndSelect('product.brand', 'brand')
+    //   .leftJoinAndSelect('product.images', 'images');
 
     // queryBuilder
     //   .leftJoinAndSelect('product.variants', 'variant')
     //   .leftJoinAndSelect('variant.images', 'variantImages')
     //   .leftJoinAndSelect('variant.optionValues', 'variantOptionValue')
     //   .leftJoinAndSelect('variantOptionValue.optionValue', 'optionValue');
+
+    // queryBuilder
+    //   .leftJoinAndSelect('product.variants', 'variant')
+    //   .leftJoinAndSelect('variant.imageMappings', 'imageMapping')
+    //   .leftJoinAndSelect('imageMapping.image', 'variantImage')
+    //   .leftJoinAndSelect('variant.optionValues', 'variantOptionValue')
+    //   .leftJoinAndSelect('variantOptionValue.optionValue', 'optionValue');
+
+    // queryBuilder
+    //   .leftJoinAndSelect('product.options', 'productOption')
+    //   .leftJoinAndSelect('productOption.values', 'productOptionValue');
+
+    // queryBuilder
+    //   .orderBy('product.createdAt', 'DESC')
+    //   .addOrderBy('images.position', 'ASC')
+    //   .addOrderBy('productOption.position', 'ASC')
+    //   .addOrderBy('productOptionValue.position', 'ASC')
+    //   .addOrderBy('variant.position', 'ASC')
+    //   // .addOrderBy('variantImages.position', 'ASC')
+    //   // .addOrderBy('imageMapping.position', 'ASC');
+    //   .addOrderBy('variantImage.position', 'ASC');
+
+    queryBuilder
+      .leftJoinAndSelect('product.creator', 'creator')
+      .leftJoinAndSelect('product.updater', 'updater')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('product.images', 'images')
+      .leftJoinAndSelect('product.options', 'productOption')
+      .leftJoinAndSelect('productOption.values', 'productOptionValue');
 
     queryBuilder
       .leftJoinAndSelect('product.variants', 'variant')
@@ -42,18 +72,15 @@ export class ProductRepository {
       .leftJoinAndSelect('variantOptionValue.optionValue', 'optionValue');
 
     queryBuilder
-      .leftJoinAndSelect('product.options', 'productOption')
-      .leftJoinAndSelect('productOption.values', 'productOptionValue');
-
-    queryBuilder
       .orderBy('product.createdAt', 'DESC')
       .addOrderBy('images.position', 'ASC')
       .addOrderBy('productOption.position', 'ASC')
-      .addOrderBy('productOptionValue.position', 'ASC')
-      .addOrderBy('variant.position', 'ASC')
-      // .addOrderBy('variantImages.position', 'ASC')
-      // .addOrderBy('imageMapping.position', 'ASC');
-      .addOrderBy('variantImage.position', 'ASC');
+      .addOrderBy('productOptionValue.position', 'ASC');
+
+    queryBuilder
+      // .addOrderBy('variant.position', 'ASC', 'NULLS LAST')
+      .addOrderBy('imageMapping.position', 'ASC', 'NULLS LAST')
+      .addOrderBy('variantImage.position', 'ASC', 'NULLS LAST');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
     if (skip !== undefined) queryBuilder.skip(skip);
@@ -91,7 +118,7 @@ export class ProductRepository {
       .orderBy('product.createdAt', 'DESC')
       .addOrderBy('images.position', 'ASC')
       .addOrderBy('productOption.position', 'ASC')
-      .addOrderBy('optionValue.position', 'ASC') //
+      // .addOrderBy('optionValue.position', 'ASC') //
       .addOrderBy('productOptionValue.position', 'ASC')
       .addOrderBy('variant.position', 'ASC')
       .addOrderBy('variantImage.position', 'ASC');
