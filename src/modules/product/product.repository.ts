@@ -73,14 +73,14 @@ export class ProductRepository {
 
     queryBuilder
       .orderBy('product.createdAt', 'DESC')
-      .addOrderBy('images.position', 'ASC')
-      .addOrderBy('productOption.position', 'ASC')
-      .addOrderBy('productOptionValue.position', 'ASC');
+      // .addOrderBy('images.position', 'ASC')
+      // .addOrderBy('productOption.position', 'ASC')
+      // .addOrderBy('productOptionValue.position', 'ASC');
 
     queryBuilder
       // .addOrderBy('variant.position', 'ASC', 'NULLS LAST')
-      .addOrderBy('imageMapping.position', 'ASC', 'NULLS LAST')
-      .addOrderBy('variantImage.position', 'ASC', 'NULLS LAST');
+      // .addOrderBy('imageMapping.position', 'ASC', 'NULLS LAST')
+      // .addOrderBy('variantImage.position', 'ASC', 'NULLS LAST');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
     if (skip !== undefined) queryBuilder.skip(skip);
@@ -115,10 +115,10 @@ export class ProductRepository {
       .leftJoinAndSelect('product.options', 'productOption')
       .leftJoinAndSelect('productOption.values', 'productOptionValue')
 
-      .orderBy('product.createdAt', 'DESC')
-      .addOrderBy('images.position', 'ASC')
+      // .orderBy('product.createdAt', 'DESC')
+      // .addOrderBy('images.position', 'ASC')
       .addOrderBy('productOption.position', 'ASC')
-      // .addOrderBy('optionValue.position', 'ASC') //
+      .addOrderBy('optionValue.position', 'ASC') //
       .addOrderBy('productOptionValue.position', 'ASC')
       .addOrderBy('variant.position', 'ASC')
       .addOrderBy('variantImage.position', 'ASC');

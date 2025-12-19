@@ -31,10 +31,10 @@ export class Product extends BaseEntity {
     scale: 2,
     nullable: true,
   })
-  price?: number;
+  price?: number | null;
 
   @Column({ type: 'int', nullable: true })
-  stock?: number;
+  stock?: number | null;
 
   @Column({ name: 'has_variants', type: 'boolean', default: false })
   hasVariants: boolean;
