@@ -8,7 +8,9 @@ import {
   Query,
   Request,
   Res,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
@@ -21,7 +23,9 @@ import { GetProductOptionDto } from './dto/get-product-option.dto';
 import { GetProductDto } from './dto/get-product.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('products')
 export class ProductController {
@@ -117,15 +121,23 @@ export class ProductController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FilesInterceptor('images', 50))
   async createProduct(
     @Res() res: Response,
     @Request() request: any,
-    @Body() createProductVariantDto: CreateProductVariantDto,
+    @Body() dto: CreateProductDto,
+    @UploadedFiles() images: Express.Multer.File[],
   ) {
     try {
-      const result = await this.productService.createVariant({
+      // const result = await this.productService.createProduct({
+      //   createdBy: request.user.userId,
+      //   variables: createProductVariantDto,
+      // });
+
+      const result = await this.productService.createProduct({
         createdBy: request.user.userId,
-        variables: createProductVariantDto,
+        variables: dto,
+        files: images,
       });
 
       if (!result)

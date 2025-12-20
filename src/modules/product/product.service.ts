@@ -15,13 +15,15 @@ import { ProductVariantOptionValue } from './entities/product-variant-option-val
 import { ProductVariant } from './entities/product-variant.entity';
 import { Product } from './entities/product.entity';
 import { ProductRepository } from './product.repository';
-import { CreateProductDto } from './entities/create-product.dto';
+import { CreateProductDto } from './dto/create-product.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly productRepository: ProductRepository,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   private async getColorOptionId(
@@ -130,9 +132,366 @@ export class ProductService {
     });
   }
 
-  async createProduct(dto: ICreate<CreateProductDto>) {
+  // async createProduct(dto: ICreate<CreateProductDto>) {
+  //   return await this.dataSource.transaction(async (manager) => {
+  //     const { createdBy, variables } = dto;
+  //     const {
+  //       name,
+  //       slug,
+  //       description,
+  //       categoryId,
+  //       brandId,
+  //       price,
+  //       stock,
+  //       status,
+  //       images,
+  //       variants,
+  //     } = variables;
+
+  //     const productRepo = manager.getRepository(Product);
+  //     const productImageRepo = manager.getRepository(ProductImage);
+  //     const optionRepo = manager.getRepository(ProductOption);
+  //     const optionValueRepo = manager.getRepository(ProductOptionValue);
+  //     const variantRepo = manager.getRepository(ProductVariant);
+  //     const variantOptionValueRepo = manager.getRepository(
+  //       ProductVariantOptionValue,
+  //     );
+  //     const variantImageRepo = manager.getRepository(ProductVariantImage);
+  //     const imageMappingRepo = manager.getRepository(
+  //       ProductVariantImageMapping,
+  //     );
+
+  //     // ========== BƯỚC 1: Tạo Product ==========
+  //     const hasVariants = variants && variants.length > 0;
+
+  //     const insertProductResult = await productRepo
+  //       .createQueryBuilder()
+  //       .insert()
+  //       .values({
+  //         name,
+  //         slug,
+  //         description,
+  //         categoryId,
+  //         brandId,
+  //         price,
+  //         stock,
+  //         hasVariants,
+  //         status,
+  //         createdBy,
+  //         updatedBy: createdBy,
+  //       })
+  //       .execute();
+
+  //     const productId = insertProductResult.identifiers[0].id;
+
+  //     // ========== BƯỚC 2: Xử lý KHÔNG có variants ==========
+  //     if (!hasVariants) {
+  //       // Lưu images vào ProductImage
+  //       if (images && images.length > 0) {
+  //         for (let i = 0; i < images.length; i++) {
+  //           const imageDto = images[i];
+  //           await productImageRepo
+  //             .createQueryBuilder()
+  //             .insert()
+  //             .values({
+  //               productId,
+  //               url: imageDto.url,
+  //               position: imageDto.position ?? i,
+  //               createdBy,
+  //               updatedBy: createdBy,
+  //             })
+  //             .execute();
+  //         }
+  //       }
+
+  //       return {
+  //         success: true,
+  //         productId,
+  //         message: 'Tạo sản phẩm thành công (không có biến thể)',
+  //       };
+  //     }
+
+  //     // ========== BƯỚC 3: Xử lý CÓ variants ==========
+
+  //     // 3.1. Nhóm variants theo optionName để tạo ProductOption
+  //     const optionMap = new Map<string, Set<string>>(); // Map<optionName, Set<value>>
+
+  //     variants.forEach((variant) => {
+  //       variant.optionValues.forEach((ov) => {
+  //         if (!optionMap.has(ov.optionName)) {
+  //           optionMap.set(ov.optionName, new Set());
+  //         }
+  //         optionMap.get(ov.optionName)!.add(ov.value);
+  //       });
+  //     });
+
+  //     // 3.2. Tạo ProductOption và ProductOptionValue
+  //     const createdOptions: Map<
+  //       string,
+  //       { optionId: string; values: Map<string, string> }
+  //     > = new Map();
+
+  //     let optionPosition = 0;
+  //     for (const [optionName, valuesSet] of optionMap.entries()) {
+  //       // Tạo ProductOption
+  //       const insertOptionResult = await optionRepo
+  //         .createQueryBuilder()
+  //         .insert()
+  //         .values({
+  //           productId,
+  //           name: optionName,
+  //           position: optionPosition++,
+  //           createdBy,
+  //           updatedBy: createdBy,
+  //         })
+  //         .execute();
+
+  //       const optionId = insertOptionResult.identifiers[0].id;
+
+  //       // Tạo ProductOptionValue cho option này
+  //       const valueMap = new Map<string, string>(); // Map<value, optionValueId>
+  //       let valuePosition = 0;
+
+  //       for (const value of valuesSet) {
+  //         const insertValueResult = await optionValueRepo
+  //           .createQueryBuilder()
+  //           .insert()
+  //           .values({
+  //             optionId,
+  //             value,
+  //             position: valuePosition++,
+  //             createdBy,
+  //             updatedBy: createdBy,
+  //           })
+  //           .execute();
+
+  //         const optionValueId = insertValueResult.identifiers[0].id;
+  //         valueMap.set(value, optionValueId);
+  //       }
+
+  //       createdOptions.set(optionName, {
+  //         optionId,
+  //         values: valueMap,
+  //       });
+  //     }
+
+  //     // 3.3. Kiểm tra xem có option "Màu sắc" không
+  //     const colorOptionNames = ['màu sắc', 'color', 'màu', 'mau sac'];
+  //     const colorOption = Array.from(createdOptions.keys()).find((name) =>
+  //       colorOptionNames.includes(name.toLowerCase()),
+  //     );
+
+  //     const hasColorOption = !!colorOption;
+
+  //     // 3.4. Nhóm variants theo màu sắc (nếu có)
+  //     const variantsByColor = new Map<string, typeof variants>();
+
+  //     if (hasColorOption) {
+  //       variants.forEach((variant) => {
+  //         const colorValue = variant.optionValues.find(
+  //           (ov) => ov.optionName.toLowerCase() === colorOption!.toLowerCase(),
+  //         )?.value;
+
+  //         if (colorValue) {
+  //           if (!variantsByColor.has(colorValue)) {
+  //             variantsByColor.set(colorValue, []);
+  //           }
+  //           variantsByColor.get(colorValue)!.push(variant);
+  //         }
+  //       });
+  //     }
+
+  //     // 3.5. Tạo variants
+  //     const createdVariantIds: string[] = [];
+
+  //     for (const [index, variantDto] of variants.entries()) {
+  //       // Tạo ProductVariant
+  //       const insertVariantResult = await variantRepo
+  //         .createQueryBuilder()
+  //         .insert()
+  //         .values({
+  //           productId,
+  //           price: variantDto.price,
+  //           stock: variantDto.stock,
+  //           status: variantDto.status ?? 'active',
+  //           position: variantDto.position ?? index,
+  //           createdBy,
+  //           updatedBy: createdBy,
+  //         })
+  //         .execute();
+
+  //       const variantId = insertVariantResult.identifiers[0].id;
+  //       createdVariantIds.push(variantId);
+
+  //       // Tạo mapping giữa variant và option values
+  //       let optionValuePosition = 0;
+  //       for (const ov of variantDto.optionValues) {
+  //         const option = createdOptions.get(ov.optionName);
+  //         if (!option) continue;
+
+  //         const optionValueId = option.values.get(ov.value);
+  //         if (!optionValueId) continue;
+
+  //         await variantOptionValueRepo
+  //           .createQueryBuilder()
+  //           .insert()
+  //           .values({
+  //             variantId,
+  //             optionValueId,
+  //             position: optionValuePosition++,
+  //             createdBy,
+  //             updatedBy: createdBy,
+  //           })
+  //           .execute();
+  //       }
+
+  //       // ========== XỬ LÝ IMAGES CHO VARIANT ==========
+
+  //       if (hasColorOption) {
+  //         // ===== Case 1: Có option Màu sắc =====
+  //         // Chỉ lưu images cho variant đầu tiên của mỗi màu
+  //         const colorValue = variantDto.optionValues.find(
+  //           (ov) => ov.optionName.toLowerCase() === colorOption!.toLowerCase(),
+  //         )?.value;
+
+  //         if (colorValue) {
+  //           const variantsWithSameColor = variantsByColor.get(colorValue) || [];
+  //           const isFirstVariantOfColor =
+  //             variantsWithSameColor[0] === variantDto;
+
+  //           if (isFirstVariantOfColor && variantDto.images) {
+  //             // Lưu images cho variant này
+  //             const savedImageIds: string[] = [];
+
+  //             for (let i = 0; i < variantDto.images.length; i++) {
+  //               const imageDto = variantDto.images[i];
+
+  //               const insertImageResult = await variantImageRepo
+  //                 .createQueryBuilder()
+  //                 .insert()
+  //                 .values({
+  //                   url: imageDto.url,
+  //                   position: imageDto.position ?? i,
+  //                   createdBy,
+  //                   updatedBy: createdBy,
+  //                 })
+  //                 .execute();
+
+  //               const imageId = insertImageResult.identifiers[0].id;
+  //               savedImageIds.push(imageId);
+
+  //               await imageMappingRepo
+  //                 .createQueryBuilder()
+  //                 .insert()
+  //                 .values({
+  //                   variantId,
+  //                   imageId,
+  //                   position: i,
+  //                   createdBy,
+  //                   updatedBy: createdBy,
+  //                 })
+  //                 .execute();
+  //             }
+
+  //             // Copy images cho các variants khác cùng màu
+  //             for (const otherVariant of variantsWithSameColor) {
+  //               if (otherVariant === variantDto) continue;
+
+  //               const otherVariantIndex = variants.indexOf(otherVariant);
+  //               if (otherVariantIndex <= index) continue; // Chỉ copy cho variants sau
+
+  //               // Tìm variantId đã tạo
+  //               const otherVariantId = createdVariantIds[otherVariantIndex];
+  //               if (!otherVariantId) continue;
+
+  //               // Copy image mappings
+  //               for (let i = 0; i < savedImageIds.length; i++) {
+  //                 await imageMappingRepo
+  //                   .createQueryBuilder()
+  //                   .insert()
+  //                   .values({
+  //                     variantId: otherVariantId,
+  //                     imageId: savedImageIds[i],
+  //                     position: i,
+  //                     createdBy,
+  //                     updatedBy: createdBy,
+  //                   })
+  //                   .execute();
+  //               }
+  //             }
+  //           }
+  //         }
+  //       } else {
+  //         // ===== Case 2: Không có option Màu sắc =====
+  //         // Lưu tất cả images cho variant đầu tiên, các variant sau dùng chung
+
+  //         if (index === 0 && images && images.length > 0) {
+  //           const savedImageIds: string[] = [];
+
+  //           for (let i = 0; i < images.length; i++) {
+  //             const imageDto = images[i];
+
+  //             const insertImageResult = await variantImageRepo
+  //               .createQueryBuilder()
+  //               .insert()
+  //               .values({
+  //                 url: imageDto.url,
+  //                 position: imageDto.position ?? i,
+  //                 createdBy,
+  //                 updatedBy: createdBy,
+  //               })
+  //               .execute();
+
+  //             const imageId = insertImageResult.identifiers[0].id;
+  //             savedImageIds.push(imageId);
+
+  //             await imageMappingRepo
+  //               .createQueryBuilder()
+  //               .insert()
+  //               .values({
+  //                 variantId,
+  //                 imageId,
+  //                 position: i,
+  //                 createdBy,
+  //                 updatedBy: createdBy,
+  //               })
+  //               .execute();
+  //           }
+
+  //           // Copy cho tất cả variants khác
+  //           for (let i = 1; i < createdVariantIds.length; i++) {
+  //             for (let j = 0; j < savedImageIds.length; j++) {
+  //               await imageMappingRepo
+  //                 .createQueryBuilder()
+  //                 .insert()
+  //                 .values({
+  //                   variantId: createdVariantIds[i],
+  //                   imageId: savedImageIds[j],
+  //                   position: j,
+  //                   createdBy,
+  //                   updatedBy: createdBy,
+  //                 })
+  //                 .execute();
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     return {
+  //       success: true,
+  //       productId,
+  //       variantIds: createdVariantIds,
+  //       message: `Tạo sản phẩm thành công với ${variants.length} biến thể`,
+  //     };
+  //   });
+  // }
+
+  async createProduct(
+    dto: ICreate<CreateProductDto> & { files?: Express.Multer.File[] },
+  ) {
     return await this.dataSource.transaction(async (manager) => {
-      const { createdBy, variables } = dto;
+      const { createdBy, variables, files } = dto;
       const {
         name,
         slug,
@@ -142,8 +501,8 @@ export class ProductService {
         price,
         stock,
         status,
-        images,
         variants,
+        imageMetadata,
       } = variables;
 
       const productRepo = manager.getRepository(Product);
@@ -159,7 +518,25 @@ export class ProductService {
         ProductVariantImageMapping,
       );
 
-      // ========== BƯỚC 1: Tạo Product ==========
+      // ========== BƯỚC 1: Upload tất cả images lên Cloudinary ==========
+      let uploadedImages: Array<{ url: string; publicId: string }> = [];
+
+      if (files && files.length > 0) {
+        try {
+          uploadedImages =
+            await this.cloudinaryService.uploadMultipleImages(files);
+        } catch (error) {
+          throw new Error(`Lỗi khi upload ảnh: ${error.message}`);
+        }
+      }
+
+      // Map imageMetadata với uploaded images
+      const imagesWithMetadata = uploadedImages.map((img, index) => ({
+        ...img,
+        metadata: imageMetadata?.[index] || {},
+      }));
+
+      // ========== BƯỚC 2: Tạo Product ==========
       const hasVariants = variants && variants.length > 0;
 
       const insertProductResult = await productRepo
@@ -182,24 +559,23 @@ export class ProductService {
 
       const productId = insertProductResult.identifiers[0].id;
 
-      // ========== BƯỚC 2: Xử lý KHÔNG có variants ==========
+      // ========== BƯỚC 3: Xử lý KHÔNG có variants ==========
       if (!hasVariants) {
         // Lưu images vào ProductImage
-        if (images && images.length > 0) {
-          for (let i = 0; i < images.length; i++) {
-            const imageDto = images[i];
-            await productImageRepo
-              .createQueryBuilder()
-              .insert()
-              .values({
-                productId,
-                url: imageDto.url,
-                position: imageDto.position ?? i,
-                createdBy,
-                updatedBy: createdBy,
-              })
-              .execute();
-          }
+        for (let i = 0; i < imagesWithMetadata.length; i++) {
+          const { url, metadata } = imagesWithMetadata[i];
+
+          await productImageRepo
+            .createQueryBuilder()
+            .insert()
+            .values({
+              productId,
+              url,
+              position: metadata.position ?? i,
+              createdBy,
+              updatedBy: createdBy,
+            })
+            .execute();
         }
 
         return {
@@ -209,10 +585,21 @@ export class ProductService {
         };
       }
 
-      // ========== BƯỚC 3: Xử lý CÓ variants ==========
+      // ========== BƯỚC 4: Xử lý CÓ variants ==========
 
-      // 3.1. Nhóm variants theo optionName để tạo ProductOption
-      const optionMap = new Map<string, Set<string>>(); // Map<optionName, Set<value>>
+      // Nhóm images theo variantIndex
+      const imagesByVariant = new Map<number, typeof imagesWithMetadata>();
+
+      imagesWithMetadata.forEach((img) => {
+        const variantIndex = img.metadata.variantIndex ?? 0;
+        if (!imagesByVariant.has(variantIndex)) {
+          imagesByVariant.set(variantIndex, []);
+        }
+        imagesByVariant.get(variantIndex)!.push(img);
+      });
+
+      // 4.1. Tạo options và option values (giữ nguyên logic cũ)
+      const optionMap = new Map<string, Set<string>>();
 
       variants.forEach((variant) => {
         variant.optionValues.forEach((ov) => {
@@ -223,7 +610,6 @@ export class ProductService {
         });
       });
 
-      // 3.2. Tạo ProductOption và ProductOptionValue
       const createdOptions: Map<
         string,
         { optionId: string; values: Map<string, string> }
@@ -231,7 +617,6 @@ export class ProductService {
 
       let optionPosition = 0;
       for (const [optionName, valuesSet] of optionMap.entries()) {
-        // Tạo ProductOption
         const insertOptionResult = await optionRepo
           .createQueryBuilder()
           .insert()
@@ -246,8 +631,7 @@ export class ProductService {
 
         const optionId = insertOptionResult.identifiers[0].id;
 
-        // Tạo ProductOptionValue cho option này
-        const valueMap = new Map<string, string>(); // Map<value, optionValueId>
+        const valueMap = new Map<string, string>();
         let valuePosition = 0;
 
         for (const value of valuesSet) {
@@ -273,34 +657,28 @@ export class ProductService {
         });
       }
 
-      // 3.3. Kiểm tra xem có option "Màu sắc" không
-      const colorOptionNames = ['màu sắc', 'color', 'màu', 'mau sac'];
-      const colorOption = Array.from(createdOptions.keys()).find((name) =>
-        colorOptionNames.includes(name.toLowerCase()),
-      );
+      // 4.2. Xác định Primary Option
+      const primaryOptionName = Array.from(optionMap.keys())[0]; // Option đầu tiên
 
-      const hasColorOption = !!colorOption;
+      // 4.3. Nhóm variants theo Primary Option Value
+      const variantsByPrimaryOption = new Map<string, typeof variants>();
 
-      // 3.4. Nhóm variants theo màu sắc (nếu có)
-      const variantsByColor = new Map<string, typeof variants>();
+      variants.forEach((variant) => {
+        const primaryValue = variant.optionValues.find(
+          (ov) => ov.optionName === primaryOptionName,
+        )?.value;
 
-      if (hasColorOption) {
-        variants.forEach((variant) => {
-          const colorValue = variant.optionValues.find(
-            (ov) => ov.optionName.toLowerCase() === colorOption!.toLowerCase(),
-          )?.value;
-
-          if (colorValue) {
-            if (!variantsByColor.has(colorValue)) {
-              variantsByColor.set(colorValue, []);
-            }
-            variantsByColor.get(colorValue)!.push(variant);
+        if (primaryValue) {
+          if (!variantsByPrimaryOption.has(primaryValue)) {
+            variantsByPrimaryOption.set(primaryValue, []);
           }
-        });
-      }
+          variantsByPrimaryOption.get(primaryValue)!.push(variant);
+        }
+      });
 
-      // 3.5. Tạo variants
+      // 4.4. Tạo variants
       const createdVariantIds: string[] = [];
+      const savedImagesByPrimaryOption = new Map<string, string[]>(); // Map<primaryValue, imageIds[]>
 
       for (const [index, variantDto] of variants.entries()) {
         // Tạo ProductVariant
@@ -321,7 +699,7 @@ export class ProductService {
         const variantId = insertVariantResult.identifiers[0].id;
         createdVariantIds.push(variantId);
 
-        // Tạo mapping giữa variant và option values
+        // Tạo mapping với option values
         let optionValuePosition = 0;
         for (const ov of variantDto.optionValues) {
           const option = createdOptions.get(ov.optionName);
@@ -343,33 +721,35 @@ export class ProductService {
             .execute();
         }
 
-        // ========== XỬ LÝ IMAGES CHO VARIANT ==========
+        // ========== XỬ LÝ IMAGES ==========
 
-        if (hasColorOption) {
-          // ===== Case 1: Có option Màu sắc =====
-          // Chỉ lưu images cho variant đầu tiên của mỗi màu
-          const colorValue = variantDto.optionValues.find(
-            (ov) => ov.optionName.toLowerCase() === colorOption!.toLowerCase(),
-          )?.value;
+        const primaryValue = variantDto.optionValues.find(
+          (ov) => ov.optionName === primaryOptionName,
+        )?.value;
 
-          if (colorValue) {
-            const variantsWithSameColor = variantsByColor.get(colorValue) || [];
-            const isFirstVariantOfColor =
-              variantsWithSameColor[0] === variantDto;
+        if (primaryValue) {
+          const variantsWithSamePrimaryOption =
+            variantsByPrimaryOption.get(primaryValue) || [];
+          const isFirstVariant =
+            variantsWithSamePrimaryOption[0] === variantDto;
 
-            if (isFirstVariantOfColor && variantDto.images) {
-              // Lưu images cho variant này
+          if (isFirstVariant) {
+            // Lấy images cho variant này
+            const variantImages = imagesByVariant.get(index) || [];
+
+            if (variantImages.length > 0) {
               const savedImageIds: string[] = [];
 
-              for (let i = 0; i < variantDto.images.length; i++) {
-                const imageDto = variantDto.images[i];
+              // Lưu images
+              for (let i = 0; i < variantImages.length; i++) {
+                const { url, metadata } = variantImages[i];
 
                 const insertImageResult = await variantImageRepo
                   .createQueryBuilder()
                   .insert()
                   .values({
-                    url: imageDto.url,
-                    position: imageDto.position ?? i,
+                    url,
+                    position: metadata.position ?? i,
                     createdBy,
                     updatedBy: createdBy,
                   })
@@ -391,81 +771,22 @@ export class ProductService {
                   .execute();
               }
 
-              // Copy images cho các variants khác cùng màu
-              for (const otherVariant of variantsWithSameColor) {
-                if (otherVariant === variantDto) continue;
-
-                const otherVariantIndex = variants.indexOf(otherVariant);
-                if (otherVariantIndex <= index) continue; // Chỉ copy cho variants sau
-
-                // Tìm variantId đã tạo
-                const otherVariantId = createdVariantIds[otherVariantIndex];
-                if (!otherVariantId) continue;
-
-                // Copy image mappings
-                for (let i = 0; i < savedImageIds.length; i++) {
-                  await imageMappingRepo
-                    .createQueryBuilder()
-                    .insert()
-                    .values({
-                      variantId: otherVariantId,
-                      imageId: savedImageIds[i],
-                      position: i,
-                      createdBy,
-                      updatedBy: createdBy,
-                    })
-                    .execute();
-                }
-              }
+              // Lưu lại để copy cho variants khác
+              savedImagesByPrimaryOption.set(primaryValue, savedImageIds);
             }
-          }
-        } else {
-          // ===== Case 2: Không có option Màu sắc =====
-          // Lưu tất cả images cho variant đầu tiên, các variant sau dùng chung
+          } else {
+            // Copy images từ variant đầu tiên cùng primary option
+            const savedImageIds = savedImagesByPrimaryOption.get(primaryValue);
 
-          if (index === 0 && images && images.length > 0) {
-            const savedImageIds: string[] = [];
-
-            for (let i = 0; i < images.length; i++) {
-              const imageDto = images[i];
-
-              const insertImageResult = await variantImageRepo
-                .createQueryBuilder()
-                .insert()
-                .values({
-                  url: imageDto.url,
-                  position: imageDto.position ?? i,
-                  createdBy,
-                  updatedBy: createdBy,
-                })
-                .execute();
-
-              const imageId = insertImageResult.identifiers[0].id;
-              savedImageIds.push(imageId);
-
-              await imageMappingRepo
-                .createQueryBuilder()
-                .insert()
-                .values({
-                  variantId,
-                  imageId,
-                  position: i,
-                  createdBy,
-                  updatedBy: createdBy,
-                })
-                .execute();
-            }
-
-            // Copy cho tất cả variants khác
-            for (let i = 1; i < createdVariantIds.length; i++) {
-              for (let j = 0; j < savedImageIds.length; j++) {
+            if (savedImageIds && savedImageIds.length > 0) {
+              for (let i = 0; i < savedImageIds.length; i++) {
                 await imageMappingRepo
                   .createQueryBuilder()
                   .insert()
                   .values({
-                    variantId: createdVariantIds[i],
-                    imageId: savedImageIds[j],
-                    position: j,
+                    variantId,
+                    imageId: savedImageIds[i],
+                    position: i,
                     createdBy,
                     updatedBy: createdBy,
                   })
@@ -480,6 +801,7 @@ export class ProductService {
         success: true,
         productId,
         variantIds: createdVariantIds,
+        uploadedImagesCount: uploadedImages.length,
         message: `Tạo sản phẩm thành công với ${variants.length} biến thể`,
       };
     });
