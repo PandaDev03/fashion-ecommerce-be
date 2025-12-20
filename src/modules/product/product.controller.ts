@@ -115,12 +115,42 @@ export class ProductController {
     }
   }
 
+  @Post()
+  @UseGuards(AuthGuard('jwt'))
+  async createProduct(
+    @Res() res: Response,
+    @Request() request: any,
+    @Body() createProductVariantDto: CreateProductVariantDto,
+  ) {
+    try {
+      const result = await this.productService.createVariant({
+        createdBy: request.user.userId,
+        variables: createProductVariantDto,
+      });
+
+      if (!result)
+        return res
+          .status(401)
+          .json({ statusCode: 401, message: 'Thêm mới sản phẩm thất bại' });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Thêm mới sản phẩm thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Thêm mới sản phẩm thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
   @Post('/product-variant')
   @UseGuards(AuthGuard('jwt'))
   async createProductVariant(
     @Res() res: Response,
     @Request() request: any,
-
     @Body() createProductVariantDto: CreateProductVariantDto,
   ) {
     try {
