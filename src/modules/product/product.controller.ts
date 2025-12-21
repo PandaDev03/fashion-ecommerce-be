@@ -121,12 +121,13 @@ export class ProductController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FilesInterceptor('images', 50))
+  @UseInterceptors(FilesInterceptor('files', 50))
   async createProduct(
     @Res() res: Response,
     @Request() request: any,
-    @Body() dto: CreateProductDto,
-    @UploadedFiles() images: Express.Multer.File[],
+    // @Body() createProductDto: CreateProductDto,
+    @Body() createProductDto: CreateProductDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     try {
       // const result = await this.productService.createProduct({
@@ -134,10 +135,22 @@ export class ProductController {
       //   variables: createProductVariantDto,
       // });
 
+      console.log('files', files);
+      console.log('createProductDto', createProductDto);
+
+      for (let [key, value] of files.entries()) {
+        console.log(`${key}:`, value);
+      }
+
+      if (!files || files.length <= 0)
+        return res
+          .status(401)
+          .json({ message: 'Vui lòng chọn file để tải lên!', statusCode: 401 });
+
       const result = await this.productService.createProduct({
         createdBy: request.user.userId,
-        variables: dto,
-        files: images,
+        variables: createProductDto,
+        files: files,
       });
 
       if (!result)

@@ -502,8 +502,13 @@ export class ProductService {
         stock,
         status,
         variants,
-        imageMetadata,
       } = variables;
+
+      console.log('files', files);
+      console.log(
+        'files',
+        files?.forEach((file) => console.log('file', file)),
+      );
 
       const productRepo = manager.getRepository(Product);
       const productImageRepo = manager.getRepository(ProductImage);
@@ -519,22 +524,32 @@ export class ProductService {
       );
 
       // ========== BƯỚC 1: Upload tất cả images lên Cloudinary ==========
-      let uploadedImages: Array<{ url: string; publicId: string }> = [];
+      let uploadedImages: Array<{
+        uid: string;
+        url: string;
+        publicId: string;
+      }> = [];
 
       if (files && files.length > 0) {
         try {
-          uploadedImages =
+          const cloudinaryResults =
             await this.cloudinaryService.uploadMultipleImages(files);
+
+          console.log('cloudinaryResults', cloudinaryResults);
+
+          // Map uid từ originalname (FE đã rename file = uid)
+          uploadedImages = cloudinaryResults.map((result, index) => ({
+            uid: files[index].originalname, // originalname = uid
+            url: result.url,
+            publicId: result.publicId,
+          }));
         } catch (error) {
           throw new Error(`Lỗi khi upload ảnh: ${error.message}`);
         }
       }
 
-      // Map imageMetadata với uploaded images
-      const imagesWithMetadata = uploadedImages.map((img, index) => ({
-        ...img,
-        metadata: imageMetadata?.[index] || {},
-      }));
+      // Tạo Map để tra cứu nhanh: uid → uploaded image
+      const imageMap = new Map(uploadedImages.map((img) => [img.uid, img]));
 
       // ========== BƯỚC 2: Tạo Product ==========
       const hasVariants = variants && variants.length > 0;
@@ -562,8 +577,8 @@ export class ProductService {
       // ========== BƯỚC 3: Xử lý KHÔNG có variants ==========
       if (!hasVariants) {
         // Lưu images vào ProductImage
-        for (let i = 0; i < imagesWithMetadata.length; i++) {
-          const { url, metadata } = imagesWithMetadata[i];
+        for (let i = 0; i < uploadedImages.length; i++) {
+          const { url } = uploadedImages[i];
 
           await productImageRepo
             .createQueryBuilder()
@@ -571,7 +586,7 @@ export class ProductService {
             .values({
               productId,
               url,
-              position: metadata.position ?? i,
+              position: i,
               createdBy,
               updatedBy: createdBy,
             })
@@ -587,18 +602,7 @@ export class ProductService {
 
       // ========== BƯỚC 4: Xử lý CÓ variants ==========
 
-      // Nhóm images theo variantIndex
-      const imagesByVariant = new Map<number, typeof imagesWithMetadata>();
-
-      imagesWithMetadata.forEach((img) => {
-        const variantIndex = img.metadata.variantIndex ?? 0;
-        if (!imagesByVariant.has(variantIndex)) {
-          imagesByVariant.set(variantIndex, []);
-        }
-        imagesByVariant.get(variantIndex)!.push(img);
-      });
-
-      // 4.1. Tạo options và option values (giữ nguyên logic cũ)
+      // 4.1. Tạo options và option values
       const optionMap = new Map<string, Set<string>>();
 
       variants.forEach((variant) => {
@@ -657,8 +661,8 @@ export class ProductService {
         });
       }
 
-      // 4.2. Xác định Primary Option
-      const primaryOptionName = Array.from(optionMap.keys())[0]; // Option đầu tiên
+      // 4.2. Xác định Primary Option (option đầu tiên)
+      const primaryOptionName = Array.from(optionMap.keys())[0];
 
       // 4.3. Nhóm variants theo Primary Option Value
       const variantsByPrimaryOption = new Map<string, typeof variants>();
@@ -676,9 +680,9 @@ export class ProductService {
         }
       });
 
-      // 4.4. Tạo variants
+      // 4.4. Tạo variants và xử lý images
       const createdVariantIds: string[] = [];
-      const savedImagesByPrimaryOption = new Map<string, string[]>(); // Map<primaryValue, imageIds[]>
+      const savedImagesByPrimaryOption = new Map<string, string[]>();
 
       for (const [index, variantDto] of variants.entries()) {
         // Tạo ProductVariant
@@ -734,22 +738,25 @@ export class ProductService {
             variantsWithSamePrimaryOption[0] === variantDto;
 
           if (isFirstVariant) {
-            // Lấy images cho variant này
-            const variantImages = imagesByVariant.get(index) || [];
+            // Lấy images cho variant này dựa vào uid
+            const variantImages = variantDto.images
+              .map((img) => imageMap.get(img.uid)) // Tra cứu bằng uid
+              .filter(Boolean) as Array<{ url: string; publicId: string }>;
 
             if (variantImages.length > 0) {
               const savedImageIds: string[] = [];
 
-              // Lưu images
+              // Lưu images vào ProductVariantImage và mapping
               for (let i = 0; i < variantImages.length; i++) {
-                const { url, metadata } = variantImages[i];
+                const { url } = variantImages[i];
 
+                // Insert vào ProductVariantImage
                 const insertImageResult = await variantImageRepo
                   .createQueryBuilder()
                   .insert()
                   .values({
                     url,
-                    position: metadata.position ?? i,
+                    position: i,
                     createdBy,
                     updatedBy: createdBy,
                   })
@@ -758,6 +765,7 @@ export class ProductService {
                 const imageId = insertImageResult.identifiers[0].id;
                 savedImageIds.push(imageId);
 
+                // Insert vào ProductVariantImageMapping
                 await imageMappingRepo
                   .createQueryBuilder()
                   .insert()
@@ -771,7 +779,7 @@ export class ProductService {
                   .execute();
               }
 
-              // Lưu lại để copy cho variants khác
+              // Lưu lại imageIds để copy cho các variants khác cùng primary option
               savedImagesByPrimaryOption.set(primaryValue, savedImageIds);
             }
           } else {

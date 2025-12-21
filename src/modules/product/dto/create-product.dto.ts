@@ -22,7 +22,7 @@
 //   }[];
 // }
 
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsNotEmpty,
@@ -32,16 +32,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-class ImageMetadataDto {
-  @IsOptional()
-  @IsNumber()
-  position?: number;
-
-  @IsOptional()
-  @IsString()
-  variantIndex?: number;
-}
-
 class OptionValueDto {
   @IsString()
   @IsNotEmpty()
@@ -50,6 +40,12 @@ class OptionValueDto {
   @IsString()
   @IsNotEmpty()
   value: string;
+}
+
+class VariantImageDto {
+  @IsString()
+  @IsNotEmpty()
+  uid: string;
 }
 
 class VariantDto {
@@ -71,6 +67,11 @@ class VariantDto {
   @ValidateNested({ each: true })
   @Type(() => OptionValueDto)
   optionValues: OptionValueDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VariantImageDto)
+  images: VariantImageDto[];
 }
 
 export class CreateProductDto {
@@ -105,15 +106,10 @@ export class CreateProductDto {
   @IsString()
   status: 'active' | 'inactive';
 
+  @Transform(({ value }) => JSON.parse(value))
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VariantDto)
   variants?: VariantDto[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ImageMetadataDto)
-  imageMetadata?: ImageMetadataDto[];
 }
