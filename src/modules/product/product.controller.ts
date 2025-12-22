@@ -125,22 +125,12 @@ export class ProductController {
   async createProduct(
     @Res() res: Response,
     @Request() request: any,
-    // @Body() createProductDto: CreateProductDto,
     @Body() createProductDto: CreateProductDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     try {
-      // const result = await this.productService.createProduct({
-      //   createdBy: request.user.userId,
-      //   variables: createProductVariantDto,
-      // });
-
       console.log('files', files);
       console.log('createProductDto', createProductDto);
-
-      for (let [key, value] of files.entries()) {
-        console.log(`${key}:`, value);
-      }
 
       if (!files || files.length <= 0)
         return res
