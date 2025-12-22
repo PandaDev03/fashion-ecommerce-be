@@ -22,6 +22,10 @@ export class CategoryService {
     return await this.categoryRepository.findAllParents();
   }
 
+  async findOptions() {
+    return await this.categoryRepository.findOptions();
+  }
+
   async create(createCategoryDto: ICreate<CreateCategoryDto>) {
     return await this.categoryRepository.create(createCategoryDto);
   }

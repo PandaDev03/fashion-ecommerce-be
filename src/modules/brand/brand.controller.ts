@@ -57,6 +57,31 @@ export class BrandController {
     }
   }
 
+  @Get('/options')
+  @UseGuards(AuthGuard('jwt'))
+  async findOptions(@Res() res: Response) {
+    try {
+      const result = await this.brandService.findOptions();
+
+      if (!result)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Lấy thông tin thương hiệu không thành công',
+        });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Lấy thông tin thương hiệu thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Lấy thông tin thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   async createBrand(

@@ -41,7 +41,29 @@ export class CloudinaryService {
         },
       );
 
-      Readable.from(file.buffer).pipe(uploadStream);
+      const readableStream = Readable.from(file.buffer);
+      readableStream.pipe(uploadStream);
     });
+  }
+
+  async uploadMultipleImages(
+    files: Express.Multer.File[],
+    folder: string = 'fashion-ecommerce/images',
+  ): Promise<Array<{ url: string; publicId: string }>> {
+    const uploadPromises = files.map((file) => this.uploadFile(file, folder));
+    const results = await Promise.all(uploadPromises);
+
+    return results.map((res) => ({
+      url: res.secure_url,
+      publicId: res.public_id,
+    }));
+  }
+
+  async deleteImage(publicId: string) {
+    try {
+      await cloudinary.uploader.destroy(publicId);
+    } catch (error) {
+      console.error('Error deleting image from Cloudinary:', error);
+    }
   }
 }

@@ -78,6 +78,31 @@ export class CategoryController {
     }
   }
 
+  @Get('/options')
+  @UseGuards(AuthGuard('jwt'))
+  async findOptions(@Res() res: Response) {
+    try {
+      const result = await this.categoryService.findOptions();
+
+      if (!result)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Lấy thông tin danh mục không thành công',
+        });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Lấy thông tin danh mục thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Lấy thông tin thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   async create(
@@ -132,7 +157,7 @@ export class CategoryController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Lấy thông tin thất bại: ${error?.message ?? error}`,
+        message: `Cập nhật danh mục thất bại: ${error?.message ?? error}`,
       });
     }
   }

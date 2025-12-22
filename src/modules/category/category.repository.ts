@@ -85,6 +85,7 @@ export class CategoryRepository {
     queryBuilder.orderBy('category.createdAt', 'DESC');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
+
     if (skip !== undefined) queryBuilder.skip(skip);
     if (take !== undefined) queryBuilder.take(take);
 
@@ -106,6 +107,10 @@ export class CategoryRepository {
       .orderBy('category.position', 'ASC');
 
     return await queryBuilder.getMany();
+  }
+
+  async findOptions() {
+    return await this.categoryRepository.find({ select: ['id', 'name'] });
   }
 
   async create(
