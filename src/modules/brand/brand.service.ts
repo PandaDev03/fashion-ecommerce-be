@@ -15,6 +15,10 @@ export class BrandService {
     return await this.brandRepository.findAll(getBrandDto);
   }
 
+  async findOptions() {
+    return await this.brandRepository.findOptions();
+  }
+
   async create(createBrandDto: ICreate<CreateBrandDto>) {
     return await this.brandRepository.create(createBrandDto);
   }
@@ -28,8 +32,6 @@ export class BrandService {
   }
 
   async deleteMany(deleteManyBrandDto: DeleteManyBrandDto) {
-    console.log('deleteManyBrandDto', deleteManyBrandDto);
-
     const { ids } = deleteManyBrandDto;
     const affectedCount = await this.brandRepository.deleteMany(ids);
 

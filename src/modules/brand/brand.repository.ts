@@ -53,6 +53,10 @@ export class BrandRepository {
     return { brands, total };
   }
 
+  async findOptions() {
+    return await this.brandRepository.find({ select: ['id', 'name'] });
+  }
+
   async update(updateBrandDto: IUpdate<UpdateBrandDto>) {
     const { updatedBy, variables } = updateBrandDto;
     const { id, name, slug, ...rest } = variables;
