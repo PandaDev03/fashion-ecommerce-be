@@ -41,7 +41,6 @@ export class CloudinaryService {
         },
       );
 
-      // Readable.from(file.buffer).pipe(uploadStream);
       const readableStream = Readable.from(file.buffer);
       readableStream.pipe(uploadStream);
     });
@@ -51,9 +50,6 @@ export class CloudinaryService {
     files: Express.Multer.File[],
     folder: string = 'fashion-ecommerce/images',
   ): Promise<Array<{ url: string; publicId: string }>> {
-    // const uploadPromises = files.map((file) => this.uploadFile(file, folder));
-    // return await Promise.all(uploadPromises);
-
     const uploadPromises = files.map((file) => this.uploadFile(file, folder));
     const results = await Promise.all(uploadPromises);
 

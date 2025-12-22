@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   Post,
   Put,
   Query,
@@ -15,17 +16,20 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { createPaginatedResponse } from 'src/common/utils/function';
+import { cloudinaryStorageImage } from '../cloudinary/cloudinary-storage.config';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
+import { CreateProductDto } from './dto/create-product.dto';
+import { DeleteManyProductDto } from './dto/delete-many-product.dto';
 import { DeleteProductVariantDto } from './dto/delete-product-variant.dto';
+import { DeleteProductDto } from './dto/delete-product.dto';
 import { GetProductBySlugDto } from './dto/get-product-by-slug.dto';
 import { GetProductOptionDto } from './dto/get-product-option.dto';
 import { GetProductDto } from './dto/get-product.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
-import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('products')
 export class ProductController {
@@ -121,7 +125,9 @@ export class ProductController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FilesInterceptor('files', 50))
+  @UseInterceptors(
+    FilesInterceptor('files', 50, { storage: cloudinaryStorageImage }),
+  )
   async createProduct(
     @Res() res: Response,
     @Request() request: any,
@@ -129,9 +135,6 @@ export class ProductController {
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     try {
-      console.log('files', files);
-      console.log('createProductDto', createProductDto);
-
       if (!files || files.length <= 0)
         return res
           .status(401)
@@ -279,6 +282,62 @@ export class ProductController {
       return res.status(500).json({
         statusCode: 500,
         message: `Xóa biến thể thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Delete('/many')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteMany(
+    @Res() res: Response,
+    @Body() deleteManyProductDto: DeleteManyProductDto,
+  ) {
+    try {
+      const result = await this.productService.deleteMany(
+        deleteManyProductDto?.ids,
+      );
+
+      if (!result)
+        return res
+          .status(401)
+          .json({ statusCode: 401, message: 'Xóa sản phẩm thất bại' });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Xóa sản phẩm thành công',
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Xóa sản phẩm thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async delete(
+    @Res() res: Response,
+    @Param() deleteProductDto: DeleteProductDto,
+  ) {
+    try {
+      const result = await this.productService.delete(deleteProductDto?.id);
+
+      if (!result)
+        return res
+          .status(401)
+          .json({ statusCode: 401, message: 'Xóa sản phẩm thất bại' });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: result?.message,
+        data: result,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Xóa sản phẩm thất bại: ${error?.message ?? error}`,
       });
     }
   }

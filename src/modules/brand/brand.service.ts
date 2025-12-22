@@ -32,8 +32,6 @@ export class BrandService {
   }
 
   async deleteMany(deleteManyBrandDto: DeleteManyBrandDto) {
-    console.log('deleteManyBrandDto', deleteManyBrandDto);
-
     const { ids } = deleteManyBrandDto;
     const affectedCount = await this.brandRepository.deleteMany(ids);
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { GetProductBySlugDto } from './dto/get-product-by-slug.dto';
@@ -22,6 +22,11 @@ interface ProcessedOption {
   optionId: string;
   optionValueId: string;
   optionPosition: number;
+}
+
+interface CloudinaryFile extends Express.Multer.File {
+  path: string;
+  filename: string;
 }
 
 @Injectable()
@@ -138,8 +143,164 @@ export class ProductService {
     });
   }
 
+  private async deleteProductInTransaction(
+    manager: EntityManager,
+    productId: string,
+  ) {
+    const productRepo = manager.getRepository(Product);
+    const variantRepo = manager.getRepository(ProductVariant);
+    const optionRepo = manager.getRepository(ProductOption);
+    const optionValueRepo = manager.getRepository(ProductOptionValue);
+    const variantOptionValueRepo = manager.getRepository(
+      ProductVariantOptionValue,
+    );
+    const productImageRepo = manager.getRepository(ProductImage);
+    const variantImageRepo = manager.getRepository(ProductVariantImage);
+    const imageMappingRepo = manager.getRepository(ProductVariantImageMapping);
+
+    // Kiểm tra product có tồn tại không
+    const product = await productRepo.findOne({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new Error(`Sản phẩm với ID ${productId} không tồn tại!`);
+    }
+
+    // Thống kê số lượng đã xóa
+    const stats = {
+      productsDeleted: 0,
+      variantsDeleted: 0,
+      optionsDeleted: 0,
+      optionValuesDeleted: 0,
+      variantOptionValuesDeleted: 0,
+      productImagesDeleted: 0,
+      variantImagesDeleted: 0,
+      variantImageMappingsDeleted: 0,
+    };
+
+    // 1. Lấy danh sách variant IDs
+    const variants = await variantRepo.find({
+      where: { productId },
+      select: ['id'],
+    });
+    const variantIds = variants.map((v) => v.id);
+
+    // 2. Lấy danh sách option IDs
+    const options = await optionRepo.find({
+      where: { productId },
+      select: ['id'],
+    });
+    const optionIds = options.map((o) => o.id);
+
+    // 3. LẤY danh sách imageIds TRƯỚC KHI xóa mappings
+    let imageIds: string[] = [];
+    if (variantIds.length > 0) {
+      const variantImageMappings = await imageMappingRepo.find({
+        where: { variantId: In(variantIds) },
+        select: ['imageId'],
+      });
+      imageIds = [...new Set(variantImageMappings.map((m) => m.imageId))];
+    }
+
+    // 4. Xóa ProductVariantImageMappings
+    if (variantIds.length > 0) {
+      const deleteMappingsResult = await imageMappingRepo
+        .createQueryBuilder()
+        .delete()
+        .where('variantId IN (:...variantIds)', { variantIds })
+        .execute();
+      stats.variantImageMappingsDeleted = deleteMappingsResult.affected || 0;
+    }
+
+    // 5. Xóa ProductVariantImages (chỉ xóa những ảnh không được dùng bởi variant khác)
+    if (imageIds.length > 0) {
+      // Kiểm tra xem các ảnh này có được dùng bởi variant nào khác không
+      const otherVariantMappings = await imageMappingRepo
+        .createQueryBuilder('mapping')
+        .where('mapping.imageId IN (:...imageIds)', { imageIds })
+        .andWhere('mapping.variantId NOT IN (:...variantIds)', { variantIds })
+        .getCount();
+
+      // Nếu không có variant nào khác dùng, mới xóa
+      if (otherVariantMappings === 0) {
+        const deleteImagesResult = await variantImageRepo
+          .createQueryBuilder()
+          .delete()
+          .where('id IN (:...imageIds)', { imageIds })
+          .execute();
+        stats.variantImagesDeleted = deleteImagesResult.affected || 0;
+      }
+    }
+
+    // 5. Xóa ProductVariantOptionValues
+    if (variantIds.length > 0) {
+      const deleteVariantOptionValuesResult = await variantOptionValueRepo
+        .createQueryBuilder()
+        .delete()
+        .where('variantId IN (:...variantIds)', { variantIds })
+        .execute();
+      stats.variantOptionValuesDeleted =
+        deleteVariantOptionValuesResult.affected || 0;
+    }
+
+    // 6. Xóa ProductVariants
+    if (variantIds.length > 0) {
+      const deleteVariantsResult = await variantRepo
+        .createQueryBuilder()
+        .delete()
+        .where('id IN (:...variantIds)', { variantIds })
+        .execute();
+      stats.variantsDeleted = deleteVariantsResult.affected || 0;
+    }
+
+    // 7. Xóa ProductOptionValues
+    if (optionIds.length > 0) {
+      const deleteOptionValuesResult = await optionValueRepo
+        .createQueryBuilder()
+        .delete()
+        .where('optionId IN (:...optionIds)', { optionIds })
+        .execute();
+      stats.optionValuesDeleted = deleteOptionValuesResult.affected || 0;
+    }
+
+    // 8. Xóa ProductOptions
+    if (optionIds.length > 0) {
+      const deleteOptionsResult = await optionRepo
+        .createQueryBuilder()
+        .delete()
+        .where('id IN (:...optionIds)', { optionIds })
+        .execute();
+      stats.optionsDeleted = deleteOptionsResult.affected || 0;
+    }
+
+    // 9. Xóa ProductImages
+    const deleteProductImagesResult = await productImageRepo
+      .createQueryBuilder()
+      .delete()
+      .where('productId = :productId', { productId })
+      .execute();
+    stats.productImagesDeleted = deleteProductImagesResult.affected || 0;
+
+    // 10. Cuối cùng, xóa Product
+    const deleteProductResult = await productRepo
+      .createQueryBuilder()
+      .delete()
+      .where('id = :productId', { productId })
+      .execute();
+    stats.productsDeleted = deleteProductResult.affected || 0;
+
+    return {
+      success: true,
+      message: 'Xóa sản phẩm thành công',
+      productId,
+      ...stats,
+    };
+  }
+
   async createProduct(
-    dto: ICreate<CreateProductDto> & { files?: Express.Multer.File[] },
+    // dto: ICreate<CreateProductDto> & { files?: Express.Multer.File[] },
+    dto: ICreate<CreateProductDto> & { files?: CloudinaryFile[] },
   ) {
     return await this.dataSource.transaction(async (manager) => {
       const { createdBy, variables, files } = dto;
@@ -154,12 +315,6 @@ export class ProductService {
         status,
         variants,
       } = variables;
-
-      // console.log('files', files);
-      // console.log(
-      //   'files',
-      //   files?.forEach((file) => console.log('file', file)),
-      // );
 
       const productRepo = manager.getRepository(Product);
       const productImageRepo = manager.getRepository(ProductImage);
@@ -183,16 +338,14 @@ export class ProductService {
 
       if (files && files.length > 0) {
         try {
-          const cloudinaryResults =
-            await this.cloudinaryService.uploadMultipleImages(files);
-
+          // const cloudinaryResults =
+          //   await this.cloudinaryService.uploadMultipleImages(files);
           // console.log('cloudinaryResults', cloudinaryResults);
 
-          // Map uid từ originalname (FE đã rename file = uid)
-          uploadedImages = cloudinaryResults.map((result, index) => ({
+          uploadedImages = files.map((result, index) => ({
             uid: files[index].originalname, // originalname = uid
-            url: result.url,
-            publicId: result.publicId,
+            url: result.path,
+            publicId: result.filename,
           }));
         } catch (error) {
           throw new Error(`Lỗi khi upload ảnh: ${error.message}`);
@@ -1522,6 +1675,108 @@ export class ProductService {
         .orderBy('imageMapping.position', 'ASC')
         .addOrderBy('variantOptionValue.position', 'ASC')
         .getOne();
+    });
+  }
+
+  async delete(id: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      return await this.deleteProductInTransaction(manager, id);
+    });
+  }
+
+  async deleteMany(productIds: string[]) {
+    if (!productIds || productIds.length === 0) {
+      throw new Error('Danh sách productIds không được rỗng!');
+    }
+
+    return await this.dataSource.transaction(async (manager) => {
+      const productRepo = manager.getRepository(Product);
+      const variantRepo = manager.getRepository(ProductVariant);
+      const optionRepo = manager.getRepository(ProductOption);
+      const optionValueRepo = manager.getRepository(ProductOptionValue);
+      const variantOptionValueRepo = manager.getRepository(
+        ProductVariantOptionValue,
+      );
+      const productImageRepo = manager.getRepository(ProductImage);
+      const variantImageRepo = manager.getRepository(ProductVariantImage);
+      const imageMappingRepo = manager.getRepository(
+        ProductVariantImageMapping,
+      );
+
+      // 1. Lấy tất cả variant IDs
+      const variants = await variantRepo.find({
+        where: { productId: In(productIds) },
+        select: ['id'],
+      });
+      const variantIds = variants.map((v) => v.id);
+
+      // 2. Lấy tất cả option IDs
+      const options = await optionRepo.find({
+        where: { productId: In(productIds) },
+        select: ['id'],
+      });
+      const optionIds = options.map((o) => o.id);
+
+      // 3. Lấy tất cả image IDs
+      const imageMappings = await imageMappingRepo.find({
+        where: { variantId: In(variantIds) },
+        select: ['imageId'],
+      });
+      const imageIds = [...new Set(imageMappings.map((m) => m.imageId))];
+
+      // Thực hiện xóa bulk
+      const results = {
+        variantImageMappingsDeleted: 0,
+        variantImagesDeleted: 0,
+        variantOptionValuesDeleted: 0,
+        variantsDeleted: 0,
+        optionValuesDeleted: 0,
+        optionsDeleted: 0,
+        productImagesDeleted: 0,
+        productsDeleted: 0,
+      };
+
+      // Xóa theo thứ tự phụ thuộc
+      if (variantIds.length > 0) {
+        results.variantImageMappingsDeleted =
+          (await imageMappingRepo.delete({ variantId: In(variantIds) }))
+            .affected || 0;
+
+        results.variantOptionValuesDeleted =
+          (await variantOptionValueRepo.delete({ variantId: In(variantIds) }))
+            .affected || 0;
+
+        results.variantsDeleted =
+          (await variantRepo.delete({ id: In(variantIds) })).affected || 0;
+      }
+
+      if (imageIds.length > 0) {
+        results.variantImagesDeleted =
+          (await variantImageRepo.delete({ id: In(imageIds) })).affected || 0;
+      }
+
+      if (optionIds.length > 0) {
+        results.optionValuesDeleted =
+          (await optionValueRepo.delete({ optionId: In(optionIds) }))
+            .affected || 0;
+
+        results.optionsDeleted =
+          (await optionRepo.delete({ id: In(optionIds) })).affected || 0;
+      }
+
+      results.productImagesDeleted =
+        (await productImageRepo.delete({ productId: In(productIds) }))
+          .affected || 0;
+
+      results.productsDeleted =
+        (await productRepo.delete({ id: In(productIds) })).affected || 0;
+
+      return {
+        success: true,
+        message: `Đã xóa ${results.productsDeleted} sản phẩm`,
+        productIds,
+        ...results,
+      };
     });
   }
 

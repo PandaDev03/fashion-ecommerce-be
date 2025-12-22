@@ -20,7 +20,7 @@ export const cloudinaryStorageImage = new CloudinaryStorage({
       folder: 'fashion-ecommerce/images',
       allowedFormats: ['jpg', 'png', 'jpeg', 'webp', 'svg'],
       transformation: [{ width: 500, height: 500, crop: 'limit' }],
-      public_id: `logo-${Date.now()}-${file.originalname.split('.')[0]}`,
+      public_id: `product-${Date.now()}-${file.originalname.split('.')[0]}`,
     };
   },
 });
