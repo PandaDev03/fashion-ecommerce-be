@@ -10,7 +10,6 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
   async findCartItems(@Res() res: Response, @Body() getCartDto: GetCartDto) {
     try {
       const result = await this.cartService.findCartItems(getCartDto.items);
