@@ -76,7 +76,7 @@ export class ProductRepository {
     // .addOrderBy('productOption.position', 'ASC')
     // .addOrderBy('productOptionValue.position', 'ASC');
 
-    queryBuilder;
+    // queryBuilder
     // .addOrderBy('variant.position', 'ASC', 'NULLS LAST')
     // .addOrderBy('imageMapping.position', 'ASC', 'NULLS LAST')
     // .addOrderBy('variantImage.position', 'ASC', 'NULLS LAST');
