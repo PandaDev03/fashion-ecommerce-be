@@ -1,6 +1,17 @@
-import { Body, Controller, Get, Param, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Request,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { createPaginatedResponse } from 'src/common/utils/function';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderService } from './order.service';
 
@@ -61,6 +72,31 @@ export class OrderController {
       return res.status(500).json({
         statusCode: 500,
         message: `Đặt hàng thất bại ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Get('user')
+  @UseGuards(AuthGuard('jwt'))
+  async getOrderByUserId(@Request() req: any, @Res() res: Response) {
+    try {
+      const result = await this.orderService.findOrderByUserId(req.user.userId);
+
+      if (!result)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Lấy thông tin đơn hàng không thành công',
+        });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Lấy thông tin đơn hàng thành công',
+        ...createPaginatedResponse({}, result.total, result.orders),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Lấy thông tin đơn hàng thất bại ${error?.message ?? error}`,
       });
     }
   }

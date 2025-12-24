@@ -136,6 +136,14 @@ export class OrderService {
     return (result?.affected ?? 0) > 0;
   }
 
+  async findOrderByUserId(userId: string) {
+    const { orders, total } =
+      await this.orderRepository.findOrderByUserId(userId);
+
+    const mappedOrders = orders.map((order) => this.mapToOrderResponse(order));
+    return { orders: mappedOrders, total };
+  }
+
   async findOrderById(orderId: string): Promise<OrderResponseDto> {
     const order = await this.orderRepository.findOrderById(orderId);
     if (!order)

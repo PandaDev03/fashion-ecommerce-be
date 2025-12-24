@@ -58,6 +58,19 @@ export class OrderRepository {
     }
   }
 
+  async findOrderByUserId(userId: string) {
+    const [orders, total] = await this.orderRepo
+      .createQueryBuilder('o')
+      .leftJoinAndSelect('o.orderDetails', 'details')
+      .leftJoinAndSelect('details.product', 'product')
+      .leftJoinAndSelect('details.productVariant', 'variant')
+      .where('o.userId = :uId', { uId: userId })
+      .orderBy('o.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return { orders, total };
+  }
+
   async findOrderById(orderId: string): Promise<Order | null> {
     return await this.orderRepo
       .createQueryBuilder('order')
