@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
 import { BaseEntity } from 'src/common/entities/base.entity';
+import { VariantAttributes } from 'src/modules/order/dto/order-response.dto';
 import { Order } from 'src/modules/order/entity/order.entity';
 import { ProductVariant } from 'src/modules/product/entities/product-variant.entity';
 import { Product } from 'src/modules/product/entities/product.entity';
@@ -20,9 +21,10 @@ export class OrderDetail extends BaseEntity {
   productName: string;
 
   @Column({ name: 'variant_attributes', type: 'json', nullable: true })
-  variantAttributes?: {
-    [key: string]: string;
-  };
+  // variantAttributes?: {
+  //   [key: string]: string;
+  // };
+  variantAttributes?: VariantAttributes[];
 
   @Column({ type: 'int' })
   quantity: number;

@@ -5,20 +5,21 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { OrderRepository } from './order.repository';
 
 import { OrderDetail } from '../order-details/entity/order-details.entity';
 import { ProductVariant } from '../product/entities/product-variant.entity';
 import { Product } from '../product/entities/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderResponseDto } from './dto/order-response.dto';
+import { OrderResponseDto, VariantAttributes } from './dto/order-response.dto';
 import { Order } from './entity/order.entity';
+import { OrderRepository } from './order.repository';
 
 interface OrderItemData {
   productId: string;
   productVariantId?: string;
   productName: string;
-  variantAttributes?: Record<string, string>;
+  // variantAttributes?: Record<string, string>;
+  variantAttributes?: VariantAttributes[];
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -138,7 +139,8 @@ export class OrderService {
   async findOrderById(orderId: string): Promise<OrderResponseDto> {
     const order = await this.orderRepository.findOrderById(orderId);
     if (!order)
-      throw new NotFoundException(`Order with ID ${orderId} not found`);
+      // throw new NotFoundException(`Order with ID ${orderId} not found`);
+      throw new NotFoundException(`Không tìm thấy đơn hàng ${orderId}`);
 
     return this.mapToOrderResponse(order);
   }
@@ -147,7 +149,8 @@ export class OrderService {
     const order =
       await this.orderRepository.findOrderByOrderNumber(orderNumber);
     if (!order)
-      throw new NotFoundException(`Order with number ${orderNumber} not found`);
+      throw new NotFoundException(`Không tìm thấy đơn hàng ${orderNumber}`);
+    // throw new NotFoundException(`Order with number ${orderNumber} not found`);
 
     return this.mapToOrderResponse(order);
   }
@@ -170,7 +173,8 @@ export class OrderService {
         );
 
       let unitPrice: number;
-      let variantAttributes: Record<string, string> | undefined;
+      // let variantAttributes: Record<string, string> | undefined;
+      let variantAttributes: VariantAttributes[] = [];
       let imageUrl: string | undefined;
 
       if (item.productVariantId) {
@@ -196,17 +200,23 @@ export class OrderService {
 
         if (variant.stock < item.quantity)
           throw new BadRequestException(
-            `Insufficient stock for variant ${variant.id}`,
+            // `Insufficient stock for variant ${variant.id}`,
+            `Sản phẩm ${product.name} với biến thể ${variant.id} không đủ hàng tồn kho.`,
           );
 
         unitPrice = Number(variant.price);
 
-        variantAttributes = {};
+        // variantAttributes = {};
+        variantAttributes = [];
         if (variant.optionValues) {
           for (const ov of variant.optionValues) {
             if (ov.optionValue?.option) {
-              variantAttributes[ov.optionValue.option.name] =
-                ov.optionValue.value;
+              variantAttributes.push({
+                name: ov.optionValue.option.name,
+                value: ov.optionValue.value,
+              });
+              // variantAttributes[ov.optionValue.option.name] =
+              //   ov.optionValue.value;
             }
           }
         }
@@ -216,7 +226,8 @@ export class OrderService {
       } else {
         if (product.stock == null || product.stock < item.quantity)
           throw new BadRequestException(
-            `Insufficient stock for product ${product.id}`,
+            // `Insufficient stock for product ${product.id}`,
+            `Sản phẩm ${product.name} không đủ hàng tồn kho.`,
           );
 
         unitPrice = Number(product.price);
