@@ -12,6 +12,8 @@ import { BrandModule } from './modules/brand/brand.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CategoryModule } from './modules/category/category.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { OrderDetailsModule } from './modules/order-details/order-details.module';
+import { OrderModule } from './modules/order/order.module';
 import { ProductModule } from './modules/product/product.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -33,6 +35,8 @@ import { UserModule } from './modules/user/user.module';
     BrandModule,
     CloudinaryModule,
     CartModule,
+    OrderModule,
+    OrderDetailsModule,
   ],
   controllers: [AppController],
   providers: [AppService, CloudinaryConfig],
