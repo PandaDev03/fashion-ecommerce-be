@@ -38,8 +38,6 @@ export class OrderService {
   ) {}
 
   private mapToOrderResponse(order: Order): OrderResponseDto {
-    console.log(order.orderDetails?.[0].variantAttributes);
-
     return {
       id: order.id,
       orderNumber: order.orderNumber,

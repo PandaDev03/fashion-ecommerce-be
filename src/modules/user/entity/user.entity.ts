@@ -34,4 +34,8 @@ export class User extends BaseEntity {
     select: false,
   })
   refreshToken: string | null;
+
+  get accountType(): 'system' | 'google' {
+    return this.password ? 'system' : 'google';
+  }
 }
