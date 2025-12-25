@@ -20,7 +20,7 @@ import { AuthService } from './auth.service';
 import { SignInWIthGoogleDto } from './dto/sign-in-with-google.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -199,7 +199,8 @@ export class AuthController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
+  @UseGuards(RefreshTokenGuard)
   @Post('sign-out')
   async signOut(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     try {
