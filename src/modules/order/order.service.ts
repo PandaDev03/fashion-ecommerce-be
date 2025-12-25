@@ -13,6 +13,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto, VariantAttributes } from './dto/order-response.dto';
 import { Order } from './entity/order.entity';
 import { OrderRepository } from './order.repository';
+import { GetOrderDto } from './dto/get-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 interface OrderItemData {
   productId: string;
@@ -132,6 +134,10 @@ export class OrderService {
       .execute();
 
     return (result?.affected ?? 0) > 0;
+  }
+
+  async findAllOrders(getOrderDto: GetOrderDto) {
+    return await this.orderRepository.findAllOrders(getOrderDto);
   }
 
   async findOrderByUserId(userId: string) {
@@ -255,5 +261,56 @@ export class OrderService {
     }
 
     return orderItems;
+  }
+
+  private validateStatusTransition(
+    order: Order,
+    updateStatusDto: UpdateOrderStatusDto,
+  ): void {
+    const { status, cancellationReason } = updateStatusDto;
+
+    if (order.status === 'cancelled')
+      throw new BadRequestException('Không thể cập nhật đơn hàng đã bị hủy');
+
+    if (order.status === 'delivered')
+      throw new BadRequestException(
+        'Không thể cập nhật đơn hàng đã giao thành công',
+      );
+
+    if (status === 'confirmed')
+      if (order.status !== 'pending')
+        throw new BadRequestException(
+          'Chỉ có thể xác nhận đơn hàng ở trạng thái pending',
+        );
+
+    if (status === 'cancelled') {
+      if (!cancellationReason || cancellationReason.trim().length === 0)
+        throw new BadRequestException('Vui lòng cung cấp lý do hủy đơn hàng');
+
+      if (!['pending', 'confirmed'].includes(order.status))
+        throw new BadRequestException(
+          'Chỉ có thể hủy đơn hàng ở trạng thái pending hoặc confirmed',
+        );
+    }
+  }
+
+  async updateOrderStatus(
+    updateStatusDto: UpdateOrderStatusDto,
+    userId: string,
+  ) {
+    const { id } = updateStatusDto;
+    const order = await this.orderRepository.findOrderById(id);
+
+    if (!order)
+      throw new NotFoundException(`Không tìm thấy đơn hàng với ID: ${id}`);
+
+    this.validateStatusTransition(order, updateStatusDto);
+
+    return this.orderRepository.updateOrderStatus(
+      id,
+      updateStatusDto.status,
+      userId,
+      updateStatusDto.cancellationReason,
+    );
   }
 }
