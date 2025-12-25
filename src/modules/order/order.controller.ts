@@ -18,11 +18,15 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderService } from './order.service';
 import { GetOrderDto } from './dto/get-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { Public } from 'src/common/decorators/public.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @Public()
   @Post()
   async createOrder(
     @Res() res: Response,
@@ -50,6 +54,7 @@ export class OrderController {
     }
   }
 
+  @Public()
   @Post('migrate')
   async migrateOrders(
     @Res() res: Response,
@@ -80,8 +85,9 @@ export class OrderController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Get()
-  @UseGuards(AuthGuard('jwt'))
   async findAllOrders(@Res() res: Response, @Query() getOrderDto: GetOrderDto) {
     try {
       const { page, pageSize } = getOrderDto;
@@ -110,8 +116,9 @@ export class OrderController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.USER)
   @Get('user')
-  @UseGuards(AuthGuard('jwt'))
   async getOrderByUserId(@Request() req: any, @Res() res: Response) {
     try {
       const result = await this.orderService.findOrderByUserId(req.user.userId);
@@ -135,6 +142,7 @@ export class OrderController {
     }
   }
 
+  @Public()
   @Get(':id')
   async getOrderById(@Res() res: Response, @Param('id') id: string) {
     try {
@@ -159,6 +167,7 @@ export class OrderController {
     }
   }
 
+  @Public()
   @Get('number/:orderNumber')
   async getOrderByNumber(
     @Res() res: Response,
@@ -187,8 +196,9 @@ export class OrderController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Put('/status')
-  @UseGuards(AuthGuard('jwt'))
   async updateOrderStatus(
     @Request() req: any,
     @Res() res: Response,

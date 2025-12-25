@@ -22,13 +22,17 @@ import { DeleteBrandDto } from './dto/delete-brand.dto';
 import { DeleteManyBrandDto } from './dto/delete-many-brand.dto';
 import { GetBrandDto } from './dto/get-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
+import { RolesGuard } from 'src/common/guards/role.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 
 @Controller('brands')
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
+  @Roles(UserRole.ADMIN)
+  // @UseGuards(AuthGuard('jwt'))
   @Get()
-  @UseGuards(AuthGuard('jwt'))
   async findAll(@Res() res: Response, @Query() getBrandDto: GetBrandDto) {
     try {
       const { page, pageSize } = getBrandDto;
@@ -57,8 +61,9 @@ export class BrandController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Get('/options')
-  @UseGuards(AuthGuard('jwt'))
   async findOptions(@Res() res: Response) {
     try {
       const result = await this.brandService.findOptions();
@@ -82,8 +87,9 @@ export class BrandController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Post()
-  @UseGuards(AuthGuard('jwt'))
   async createBrand(
     @Res() res: Response,
     @Req() request: any,
@@ -111,8 +117,9 @@ export class BrandController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Put()
-  @UseGuards(AuthGuard('jwt'))
   async updateBrand(
     @Res() res: Response,
     @Request() req: any,
@@ -140,8 +147,9 @@ export class BrandController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Delete('/many')
-  @UseGuards(AuthGuard('jwt'))
   async deleteMany(
     @Res() res: Response,
     @Body() deleteManyBrandDto: DeleteManyBrandDto,
@@ -167,8 +175,9 @@ export class BrandController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
   async deleteBrand(
     @Res() res: Response,
     @Param() deleteBrandDto: DeleteBrandDto,

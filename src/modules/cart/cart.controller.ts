@@ -4,11 +4,13 @@ import type { Response } from 'express';
 
 import { CartService } from './cart.service';
 import { GetCartDto } from './dto/get-cart.dto';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('carts')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
+  @Public()
   @Post()
   async findCartItems(@Res() res: Response, @Body() getCartDto: GetCartDto) {
     try {

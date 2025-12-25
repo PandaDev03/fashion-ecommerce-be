@@ -12,9 +12,9 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { Public } from 'src/common/decorators/public.decorator';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { SignInWIthGoogleDto } from './dto/sign-in-with-google.dto';
@@ -39,6 +39,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('/sign-up')
   async signUp(
     @Res() res: Response,
@@ -69,6 +70,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('/sign-in')
   async signIn(
     @Res() res: Response,
@@ -118,6 +120,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('/sign-in-with-google')
   async signInWithGoogle(
     @Res() res: Response,
@@ -161,17 +164,19 @@ export class AuthController {
     }
   }
 
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @Public()
+  @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   async refreshTokens(
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
     try {
-      const { userId, userName } = req.user;
+      const { userId, userName, role } = req.user;
       const newAccessToken = await this.authService.getAccessToken(
         userId,
         userName,
+        role,
       );
       const newRefreshToken =
         await this.authService.getAndSaveRefreshToken(userId);
@@ -199,7 +204,6 @@ export class AuthController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
   @UseGuards(RefreshTokenGuard)
   @Post('sign-out')
   async signOut(@Req() req: any, @Res({ passthrough: true }) res: Response) {
