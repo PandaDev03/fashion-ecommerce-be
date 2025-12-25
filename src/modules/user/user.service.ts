@@ -5,13 +5,19 @@ import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRepository } from './user.repository';
+import { ChangePasswordDto } from './dto/update-password.dto';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async hashPassword(password: string) {
     return await bcrypt.hash(password, 12);
+  }
+
+  async comparePassword(plainPassword: string, hashedPassword: string) {
+    return await bcrypt.compare(plainPassword, hashedPassword);
   }
 
   async checkEmailExisted(email: string) {
@@ -47,5 +53,63 @@ export class UserService {
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     return await this.userRepository.update(id, updateUserDto);
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    const { oldPassword, newPassword } = changePasswordDto;
+
+    const user = await this.userRepository.findOne({ id: userId });
+
+    if (!user) {
+      return {
+        success: false,
+        message: 'Không tìm thấy người dùng',
+      };
+    }
+
+    if (user.password) {
+      if (!oldPassword) {
+        return {
+          success: false,
+          message: 'Vui lòng nhập mật khẩu cũ',
+        };
+      }
+
+      const isOldPasswordValid = await this.comparePassword(
+        oldPassword,
+        user.password,
+      );
+
+      if (!isOldPasswordValid) {
+        return {
+          success: false,
+          message: 'Mật khẩu cũ không chính xác',
+        };
+      }
+
+      const isSamePassword = await this.comparePassword(
+        newPassword,
+        user.password,
+      );
+
+      if (isSamePassword) {
+        return {
+          success: false,
+          message: 'Mật khẩu mới không được trùng với mật khẩu cũ',
+        };
+      }
+    }
+
+    const hashedNewPassword = await this.hashPassword(newPassword);
+    await this.userRepository.update(userId, {
+      password: hashedNewPassword,
+    });
+
+    return {
+      success: true,
+      message: user.password
+        ? 'Đổi mật khẩu thành công'
+        : 'Thiết lập mật khẩu thành công',
+    };
   }
 }

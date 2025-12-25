@@ -56,8 +56,13 @@ export class UserRepository {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    await this.userRepository.update(id, updateUserDto);
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
 
+    if (!user) throw new NotFoundException('Không tìm thấy người dùng');
+
+    await this.userRepository.update(id, updateUserDto);
     return this.findOne({ id });
   }
 

@@ -1139,33 +1139,44 @@ export class ProductService {
           }
         } else if (variantId) {
           // ========== TRƯỜNG HỢP 2: Product CÓ variant ==========
-          // Update cho TẤT CẢ variants cùng màu
 
-          const colorOptionValueId =
-            await this.getColorOptionValueIdFromVariant(
-              manager,
-              variantId,
-              productId,
-            );
+          // 2.1. Kiểm tra product có option Màu sắc không
+          const colorOptionId = await this.getColorOptionId(manager, productId);
 
           let variantsToUpdate: ProductVariant[] = [];
 
-          if (colorOptionValueId) {
-            variantsToUpdate = await this.getVariantsBySameColor(
-              manager,
-              productId,
-              colorOptionValueId,
-            );
-          } else {
-            const variant = await variantRepo.findOne({
-              where: { id: variantId },
-            });
-            if (variant) {
-              variantsToUpdate = [variant];
+          if (colorOptionId) {
+            // 2.2a. Product CÓ option Màu sắc -> Chỉ update variants CÙNG MÀU
+            const colorOptionValueId =
+              await this.getColorOptionValueIdFromVariant(
+                manager,
+                variantId,
+                productId,
+              );
+
+            if (colorOptionValueId) {
+              variantsToUpdate = await this.getVariantsBySameColor(
+                manager,
+                productId,
+                colorOptionValueId,
+              );
+            } else {
+              const variant = await variantRepo.findOne({
+                where: { id: variantId },
+              });
+              if (variant) {
+                variantsToUpdate = [variant];
+              }
             }
+          } else {
+            // 2.2b. Product KHÔNG CÓ option Màu sắc -> Update TẤT CẢ variants
+            variantsToUpdate = await variantRepo
+              .createQueryBuilder('variant')
+              .where('variant.productId = :productId', { productId })
+              .getMany();
           }
 
-          // Xử lý từng variant
+          // 2.3. Xử lý từng variant
           for (const variant of variantsToUpdate) {
             const currentVariantId = variant.id;
 
@@ -1276,32 +1287,45 @@ export class ProductService {
           .execute();
       }
 
+      // 5. Tính số lượng variants đã update (cho response)
+      let variantsUpdatedCount = 0;
+      if (hasVariants && variantId && images !== undefined) {
+        const colorOptionId = await this.getColorOptionId(manager, productId);
+
+        if (colorOptionId) {
+          // Có màu sắc -> đếm variants cùng màu
+          const colorOptionValueId =
+            await this.getColorOptionValueIdFromVariant(
+              manager,
+              variantId,
+              productId,
+            );
+          if (colorOptionValueId) {
+            const sameColorVariants = await this.getVariantsBySameColor(
+              manager,
+              productId,
+              colorOptionValueId,
+            );
+            variantsUpdatedCount = sameColorVariants?.length || 0;
+          } else {
+            variantsUpdatedCount = 1;
+          }
+        } else {
+          // Không có màu sắc -> đếm tất cả variants
+          variantsUpdatedCount = await variantRepo
+            .createQueryBuilder('variant')
+            .where('variant.productId = :productId', { productId })
+            .getCount();
+        }
+      }
+
       return {
         success: true,
         affected: {
           product: Object.keys(productData).length > 0 ? 1 : 0,
           variant: variantId && Object.keys(variantData).length > 0 ? 1 : 0,
           images: images ? images.length : 0,
-          variantsUpdated:
-            hasVariants && variantId && images !== undefined
-              ? (await this.getColorOptionValueIdFromVariant(
-                  manager,
-                  variantId,
-                  productId,
-                ))
-                ? (
-                    await this.getVariantsBySameColor(
-                      manager,
-                      productId,
-                      await this.getColorOptionValueIdFromVariant(
-                        manager,
-                        variantId,
-                        productId,
-                      ),
-                    )
-                  )?.length
-                : 1
-              : 0,
+          variantsUpdated: variantsUpdatedCount,
         },
       };
     });
@@ -1341,7 +1365,7 @@ export class ProductService {
         throw new Error('Biến thể không tồn tại!');
       }
 
-      // 2. Nếu có optionValues mới, kiểm tra trùng lặp với các variant khác
+      // 2. Nếu có optionValues mới, kiểm tra trùng lặp và cập nhật
       if (optionValues && optionValues.length > 0) {
         // Lấy tất cả variants của cùng product (trừ variant hiện tại)
         const otherVariants = await variantRepo
@@ -1373,161 +1397,212 @@ export class ProductService {
           }
         }
 
-        // 3. LẤY DANH SÁCH IMAGES CŨ TRƯỚC KHI XÓA MAPPINGS
-        const oldImageMappings = await imageMappingRepo
-          .createQueryBuilder('mapping')
-          .where('mapping.variantId = :variantId', { variantId })
-          .getMany();
+        // Kiểm tra xem optionValues có thực sự thay đổi không
+        const currentOptionValueIds = (
+          existingVariant.optionValues?.map((vo) => vo.optionValueId) || []
+        ).sort();
 
-        const oldImageIds = oldImageMappings.map((m) => m.imageId);
+        const isOptionValuesChanged =
+          JSON.stringify(currentOptionValueIds) !==
+          JSON.stringify(newOptionValueIds);
 
-        // 4. Xóa tất cả image mappings cũ của variant
-        await imageMappingRepo
-          .createQueryBuilder()
-          .delete()
-          .where('variantId = :variantId', { variantId })
-          .execute();
+        // CHỈ XỬ LÝ IMAGES KHI OPTION VALUES THỰC SỰ THAY ĐỔI
+        if (isOptionValuesChanged) {
+          // 3. LẤY DANH SÁCH IMAGES CŨ TRƯỚC KHI XÓA MAPPINGS
+          const oldImageMappings = await imageMappingRepo
+            .createQueryBuilder('mapping')
+            .where('mapping.variantId = :variantId', { variantId })
+            .getMany();
 
-        // 5. Xóa tất cả option values cũ của variant
-        await variantOptionValueRepo
-          .createQueryBuilder()
-          .delete()
-          .where('variantId = :variantId', { variantId })
-          .execute();
+          const oldImageIds = oldImageMappings.map((m) => m.imageId);
 
-        // 6. Sắp xếp option values theo position của ProductOption
-        const sortedOptionValues = await Promise.all(
-          optionValues.map(async (ov) => {
-            const option = await optionRepo.findOne({
-              where: { id: ov.optionId },
-            });
-            return {
-              ...ov,
-              optionPosition: option?.position ?? 999,
-            };
-          }),
-        );
+          // 4. Xóa tất cả image mappings cũ của variant
+          await imageMappingRepo
+            .createQueryBuilder()
+            .delete()
+            .where('variantId = :variantId', { variantId })
+            .execute();
 
-        sortedOptionValues.sort((a, b) => a.optionPosition - b.optionPosition);
-
-        // 7. Thêm option values mới theo thứ tự đã sắp xếp
-        for (const [index, optionValue] of sortedOptionValues.entries()) {
-          const { optionId, optionValueId, value, isNew } = optionValue;
-
-          let finalOptionValueId: string;
-
-          if (isNew && value) {
-            const maxPosition = await optionValueRepo
-              .createQueryBuilder('optionValue')
-              .where('optionValue.optionId = :optionId', { optionId })
-              .select('MAX(optionValue.position)', 'maxPosition')
-              .getRawOne();
-
-            const newValuePosition = (maxPosition?.maxPosition ?? -1) + 1;
-
-            const insertResult = await optionValueRepo
-              .createQueryBuilder()
-              .insert()
-              .values({
-                optionId,
-                value,
-                position: newValuePosition,
-                createdBy: updatedBy,
-                updatedBy: updatedBy,
-              })
-              .execute();
-
-            finalOptionValueId = insertResult.identifiers[0].id;
-          } else if (optionValueId) {
-            finalOptionValueId = optionValueId;
-          } else {
-            throw new Error('Thông tin option value không hợp lệ!');
-          }
-
+          // 5. Xóa tất cả option values cũ của variant
           await variantOptionValueRepo
             .createQueryBuilder()
-            .insert()
-            .values({
-              variantId,
-              optionValueId: finalOptionValueId,
-              position: index,
-              createdBy: updatedBy,
-              updatedBy: updatedBy,
-            })
+            .delete()
+            .where('variantId = :variantId', { variantId })
             .execute();
-        }
 
-        // 8. Xử lý images sau khi update option values
-        if (images && images.length > 0) {
-          // Trường hợp 1: User cung cấp ảnh mới
-          for (let i = 0; i < images.length; i++) {
-            const imageDto = images[i];
-            let imageId = imageDto.imageId;
+          // 6. Sắp xếp option values theo position của ProductOption
+          const sortedOptionValues = await Promise.all(
+            optionValues.map(async (ov) => {
+              const option = await optionRepo.findOne({
+                where: { id: ov.optionId },
+              });
+              return {
+                ...ov,
+                optionPosition: option?.position ?? 999,
+              };
+            }),
+          );
 
-            if (!imageId) {
-              const insertResult = await imageRepo
+          sortedOptionValues.sort(
+            (a, b) => a.optionPosition - b.optionPosition,
+          );
+
+          // 7. Thêm option values mới theo thứ tự đã sắp xếp
+          for (const [index, optionValue] of sortedOptionValues.entries()) {
+            const { optionId, optionValueId, value, isNew } = optionValue;
+
+            let finalOptionValueId: string;
+
+            if (isNew && value) {
+              const maxPosition = await optionValueRepo
+                .createQueryBuilder('optionValue')
+                .where('optionValue.optionId = :optionId', { optionId })
+                .select('MAX(optionValue.position)', 'maxPosition')
+                .getRawOne();
+
+              const newValuePosition = (maxPosition?.maxPosition ?? -1) + 1;
+
+              const insertResult = await optionValueRepo
                 .createQueryBuilder()
                 .insert()
                 .values({
-                  url: imageDto.url,
-                  position: imageDto.position ?? i,
+                  optionId,
+                  value,
+                  position: newValuePosition,
                   createdBy: updatedBy,
                   updatedBy: updatedBy,
                 })
                 .execute();
 
-              imageId = insertResult.identifiers[0].id;
+              finalOptionValueId = insertResult.identifiers[0].id;
+            } else if (optionValueId) {
+              finalOptionValueId = optionValueId;
+            } else {
+              throw new Error('Thông tin option value không hợp lệ!');
             }
 
-            await imageMappingRepo
+            await variantOptionValueRepo
               .createQueryBuilder()
               .insert()
               .values({
                 variantId,
-                imageId,
-                position: i,
+                optionValueId: finalOptionValueId,
+                position: index,
                 createdBy: updatedBy,
                 updatedBy: updatedBy,
               })
               .execute();
           }
-        } else {
-          // Trường hợp 2: Không có ảnh mới -> Tự động copy ảnh từ variant cùng màu
-          const colorOptionId = await this.getColorOptionId(
-            manager,
-            existingVariant.productId,
-          );
 
-          if (colorOptionId) {
-            const colorOptionValueId = this.getColorOptionValueId(
-              sortedOptionValues,
-              colorOptionId,
+          // 8. Xử lý images sau khi update option values
+          if (images && images.length > 0) {
+            // Trường hợp 1: User cung cấp ảnh mới
+            for (let i = 0; i < images.length; i++) {
+              const imageDto = images[i];
+              let imageId = imageDto.imageId;
+
+              if (!imageId) {
+                const insertResult = await imageRepo
+                  .createQueryBuilder()
+                  .insert()
+                  .values({
+                    url: imageDto.url,
+                    position: imageDto.position ?? i,
+                    createdBy: updatedBy,
+                    updatedBy: updatedBy,
+                  })
+                  .execute();
+
+                imageId = insertResult.identifiers[0].id;
+              }
+
+              await imageMappingRepo
+                .createQueryBuilder()
+                .insert()
+                .values({
+                  variantId,
+                  imageId,
+                  position: i,
+                  createdBy: updatedBy,
+                  updatedBy: updatedBy,
+                })
+                .execute();
+            }
+          } else {
+            // Trường hợp 2: Không có ảnh mới -> Tự động copy ảnh
+            const colorOptionId = await this.getColorOptionId(
+              manager,
+              existingVariant.productId,
             );
 
-            if (colorOptionValueId) {
-              const sameColorVariant = await variantRepo
+            if (colorOptionId) {
+              // 2a. Product CÓ option Màu sắc -> Copy ảnh từ variant cùng màu
+              const colorOptionValueId = this.getColorOptionValueId(
+                sortedOptionValues,
+                colorOptionId,
+              );
+
+              if (colorOptionValueId) {
+                const sameColorVariant = await variantRepo
+                  .createQueryBuilder('variant')
+                  .leftJoinAndSelect(
+                    'variant.optionValues',
+                    'variantOptionValue',
+                  )
+                  .leftJoinAndSelect('variant.imageMappings', 'imageMapping')
+                  .leftJoinAndSelect('imageMapping.image', 'image')
+                  .where('variant.productId = :productId', {
+                    productId: existingVariant.productId,
+                  })
+                  .andWhere('variant.id != :variantId', { variantId })
+                  .andWhere(
+                    'variantOptionValue.optionValueId = :colorOptionValueId',
+                    { colorOptionValueId },
+                  )
+                  .getOne();
+
+                if (
+                  sameColorVariant?.imageMappings &&
+                  sameColorVariant.imageMappings.length > 0
+                ) {
+                  for (const [
+                    index,
+                    mapping,
+                  ] of sameColorVariant.imageMappings.entries()) {
+                    await imageMappingRepo
+                      .createQueryBuilder()
+                      .insert()
+                      .values({
+                        variantId,
+                        imageId: mapping.imageId,
+                        position: index,
+                        createdBy: updatedBy,
+                        updatedBy: updatedBy,
+                      })
+                      .execute();
+                  }
+                }
+              }
+            } else {
+              // 2b. Product KHÔNG CÓ option Màu sắc -> Copy ảnh từ BẤT KỲ variant nào
+              const anyVariant = await variantRepo
                 .createQueryBuilder('variant')
-                .leftJoinAndSelect('variant.optionValues', 'variantOptionValue')
                 .leftJoinAndSelect('variant.imageMappings', 'imageMapping')
                 .leftJoinAndSelect('imageMapping.image', 'image')
                 .where('variant.productId = :productId', {
                   productId: existingVariant.productId,
                 })
                 .andWhere('variant.id != :variantId', { variantId })
-                .andWhere(
-                  'variantOptionValue.optionValueId = :colorOptionValueId',
-                  { colorOptionValueId },
-                )
                 .getOne();
 
               if (
-                sameColorVariant?.imageMappings &&
-                sameColorVariant.imageMappings.length > 0
+                anyVariant?.imageMappings &&
+                anyVariant.imageMappings.length > 0
               ) {
                 for (const [
                   index,
                   mapping,
-                ] of sameColorVariant.imageMappings.entries()) {
+                ] of anyVariant.imageMappings.entries()) {
                   await imageMappingRepo
                     .createQueryBuilder()
                     .insert()
@@ -1543,29 +1618,100 @@ export class ProductService {
               }
             }
           }
-        }
 
-        // ========== 8.5. XÓA IMAGES MỒ CÔI ==========
-        if (oldImageIds.length > 0) {
-          for (const oldImageId of oldImageIds) {
-            const mappingCount = await imageMappingRepo
-              .createQueryBuilder('mapping')
-              .where('mapping.imageId = :imageId', { imageId: oldImageId })
-              .getCount();
+          // 9. XÓA IMAGES MỒ CÔI
+          if (oldImageIds.length > 0) {
+            for (const oldImageId of oldImageIds) {
+              const mappingCount = await imageMappingRepo
+                .createQueryBuilder('mapping')
+                .where('mapping.imageId = :imageId', { imageId: oldImageId })
+                .getCount();
 
-            // Nếu không còn variant nào sử dụng image này, xóa image
-            if (mappingCount === 0) {
-              await imageRepo
-                .createQueryBuilder()
-                .delete()
-                .where('id = :imageId', { imageId: oldImageId })
-                .execute();
+              // Nếu không còn variant nào sử dụng image này, xóa image
+              if (mappingCount === 0) {
+                await imageRepo
+                  .createQueryBuilder()
+                  .delete()
+                  .where('id = :imageId', { imageId: oldImageId })
+                  .execute();
+              }
             }
+          }
+        } else {
+          // Option values KHÔNG thay đổi -> Chỉ update option values (không động chạm images)
+          // Xóa option values cũ
+          await variantOptionValueRepo
+            .createQueryBuilder()
+            .delete()
+            .where('variantId = :variantId', { variantId })
+            .execute();
+
+          // Sắp xếp và thêm lại option values
+          const sortedOptionValues = await Promise.all(
+            optionValues.map(async (ov) => {
+              const option = await optionRepo.findOne({
+                where: { id: ov.optionId },
+              });
+              return {
+                ...ov,
+                optionPosition: option?.position ?? 999,
+              };
+            }),
+          );
+
+          sortedOptionValues.sort(
+            (a, b) => a.optionPosition - b.optionPosition,
+          );
+
+          for (const [index, optionValue] of sortedOptionValues.entries()) {
+            const { optionId, optionValueId, value, isNew } = optionValue;
+
+            let finalOptionValueId: string;
+
+            if (isNew && value) {
+              const maxPosition = await optionValueRepo
+                .createQueryBuilder('optionValue')
+                .where('optionValue.optionId = :optionId', { optionId })
+                .select('MAX(optionValue.position)', 'maxPosition')
+                .getRawOne();
+
+              const newValuePosition = (maxPosition?.maxPosition ?? -1) + 1;
+
+              const insertResult = await optionValueRepo
+                .createQueryBuilder()
+                .insert()
+                .values({
+                  optionId,
+                  value,
+                  position: newValuePosition,
+                  createdBy: updatedBy,
+                  updatedBy: updatedBy,
+                })
+                .execute();
+
+              finalOptionValueId = insertResult.identifiers[0].id;
+            } else if (optionValueId) {
+              finalOptionValueId = optionValueId;
+            } else {
+              throw new Error('Thông tin option value không hợp lệ!');
+            }
+
+            await variantOptionValueRepo
+              .createQueryBuilder()
+              .insert()
+              .values({
+                variantId,
+                optionValueId: finalOptionValueId,
+                position: index,
+                createdBy: updatedBy,
+                updatedBy: updatedBy,
+              })
+              .execute();
           }
         }
       }
 
-      // 9. Cập nhật thông tin variant (price, stock, status, position)
+      // 10. Cập nhật thông tin variant (price, stock, status, position)
       const variantData: any = {};
       if (price !== undefined) variantData.price = price;
       if (stock !== undefined) variantData.stock = stock;
@@ -1584,7 +1730,7 @@ export class ProductService {
           .execute();
       }
 
-      // 10. Nếu có images được cung cấp mà không có optionValues thay đổi
+      // 11. Nếu có images được cung cấp mà không có optionValues thay đổi
       if (
         images !== undefined &&
         (!optionValues || optionValues.length === 0)
@@ -1610,7 +1756,7 @@ export class ProductService {
           .where('variantId = :variantId', { variantId })
           .execute();
 
-        // 10.1. XÓA IMAGES KHÔNG CÒN DÙNG
+        // 11.1. XÓA IMAGES KHÔNG CÒN DÙNG
         if (imageIdsToDelete.length > 0) {
           for (const imageId of imageIdsToDelete) {
             const mappingCount = await imageMappingRepo
@@ -1662,7 +1808,7 @@ export class ProductService {
         }
       }
 
-      // 11. Trả về variant đã cập nhật với đầy đủ relations
+      // 12. Trả về variant đã cập nhật với đầy đủ relations
       return await variantRepo
         .createQueryBuilder('variant')
         .where('variant.id = :variantId', { variantId })

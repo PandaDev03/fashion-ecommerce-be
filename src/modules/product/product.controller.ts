@@ -66,7 +66,7 @@ export class ProductController {
   }
 
   @Get('/slug')
-  @UseGuards(AuthGuard('jwt'))
+  // @UseGuards(AuthGuard('jwt'))
   async findBySlug(
     @Res() res: Response,
     @Query() getProductBySlugDto: GetProductBySlugDto,
