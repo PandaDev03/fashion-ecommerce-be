@@ -3,10 +3,9 @@ import * as bcrypt from 'bcrypt';
 
 import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ChangePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRepository } from './user.repository';
-import { ChangePasswordDto } from './dto/update-password.dto';
-import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class UserService {
