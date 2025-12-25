@@ -42,6 +42,7 @@ export class UserRepository {
         'phone',
         'address',
         'avatar',
+        'role',
         'isActive',
         'createdAt',
         'createdBy',

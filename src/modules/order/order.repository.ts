@@ -4,6 +4,8 @@ import { DataSource, Repository } from 'typeorm';
 
 import { OrderDetail } from '../order-details/entity/order-details.entity';
 import { Order } from './entity/order.entity';
+import { GetOrderDto } from './dto/get-order.dto';
+import { getSkipTakeParams } from 'src/common/utils/function';
 
 @Injectable()
 export class OrderRepository {
@@ -56,6 +58,56 @@ export class OrderRepository {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async findAllOrders(getOrderDto: GetOrderDto) {
+    const {
+      page,
+      pageSize,
+      search,
+      status,
+      paymentStatus,
+      createdFrom,
+      createdTo,
+    } = getOrderDto;
+
+    const queryBuilder = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.orderDetails', 'details')
+      .leftJoinAndSelect('order.updater', 'updater');
+
+    if (status) queryBuilder.andWhere('order.status = :status', { status });
+
+    if (paymentStatus) {
+      queryBuilder.andWhere('order.paymentStatus = :paymentStatus', {
+        paymentStatus,
+      });
+    }
+
+    if (createdFrom)
+      queryBuilder.andWhere('order.createdAt >= :createdFrom', { createdFrom });
+
+    if (createdTo)
+      queryBuilder.andWhere('order.createdAt <= :createdTo', { createdTo });
+
+    if (search)
+      queryBuilder.andWhere(
+        '(order.orderNumber LIKE :search OR order.customerName LIKE :search OR order.customerEmail LIKE :search OR order.customerPhone LIKE :search)',
+        { search: `%${search}%` },
+      );
+
+    queryBuilder.orderBy('order.createdAt', 'DESC');
+
+    const { skip, take } = getSkipTakeParams({ page, pageSize });
+    if (skip !== undefined) queryBuilder.skip(skip);
+    if (take !== undefined) queryBuilder.take(take);
+
+    const [orders, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      orders,
+      total,
+    };
   }
 
   async findOrderByUserId(userId: string) {
@@ -120,5 +172,44 @@ export class OrderRepository {
       .set({ stock: () => `stock - ${quantity}` })
       .where('id = :productVariantId', { productVariantId })
       .execute();
+  }
+
+  async updateOrderStatus(
+    orderId: string,
+    status: string,
+    // paymentStatus?: string,
+    updatedBy?: string,
+    cancellationReason?: string,
+  ): Promise<boolean> {
+    const updateData: any = {
+      status,
+      updatedBy,
+    };
+
+    // if (paymentStatus) {
+    //   updateData.paymentStatus = paymentStatus;
+    // }
+
+    const now = new Date();
+
+    if (status === 'confirmed') updateData.confirmedAt = now;
+
+    if (status === 'delivered') updateData.deliveredAt = now;
+
+    if (status === 'cancelled') {
+      updateData.cancelledAt = now;
+
+      if (cancellationReason)
+        updateData.cancellationReason = cancellationReason;
+    }
+
+    const result = await this.orderRepo
+      .createQueryBuilder()
+      .update(Order)
+      .set(updateData)
+      .where('id = :orderId', { orderId })
+      .execute();
+
+    return (result?.affected ?? 0) > 0;
   }
 }

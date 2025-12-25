@@ -8,20 +8,22 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserService } from './user.service';
-import { AuthGuard } from '@nestjs/passport';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 import { ChangePasswordDto } from './dto/update-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserService } from './user.service';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.USER, UserRole.ADMIN)
   async getMe(@Req() req: any, @Res() res: Response) {
     try {
       const user = await this.userService.findOne(req.user.userId);
@@ -47,8 +49,9 @@ export class UserController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.USER, UserRole.ADMIN)
   @Put()
-  @UseGuards(AuthGuard('jwt'))
   async updateUser(
     @Req() req: any,
     @Res() res: Response,
@@ -79,8 +82,9 @@ export class UserController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.USER, UserRole.ADMIN)
   @Put('change-password')
-  @UseGuards(AuthGuard('jwt'))
   async changePassword(
     @Req() req: any,
     @Res() res: Response,

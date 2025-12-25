@@ -1,4 +1,5 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
+import { UserRole } from 'src/common/enums/role.enum';
 import { Column, Entity } from 'typeorm';
 
 @Entity('users')
@@ -35,7 +36,22 @@ export class User extends BaseEntity {
   })
   refreshToken: string | null;
 
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  role: UserRole;
+
   get accountType(): 'system' | 'google' {
     return this.password ? 'system' : 'google';
+  }
+
+  isAdmin(): boolean {
+    return this.role === UserRole.ADMIN;
+  }
+
+  isUser(): boolean {
+    return this.role === UserRole.USER;
   }
 }

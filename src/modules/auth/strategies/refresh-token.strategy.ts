@@ -50,6 +50,11 @@ export class RefreshTokenStrategy extends PassportStrategy(
       throw new UnauthorizedException('Refresh token mismatch.');
     }
 
-    return { userId: user.id, userName: user.name, refreshToken };
+    return {
+      userId: user.id,
+      userName: user.name,
+      role: user.role,
+      refreshToken,
+    };
   }
 }

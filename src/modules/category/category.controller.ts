@@ -10,11 +10,11 @@ import {
   Request,
   Res,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 import { createPaginatedResponse } from 'src/common/utils/function';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -27,8 +27,9 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Get()
-  @UseGuards(AuthGuard('jwt'))
   async findAll(@Res() res: Response, @Query() getCategoryDto: GetCategoryDto) {
     try {
       const { page, pageSize } = getCategoryDto;
@@ -53,8 +54,9 @@ export class CategoryController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Get('/parents')
-  @UseGuards(AuthGuard('jwt'))
   async findAllParents(@Res() res: Response) {
     try {
       const result = await this.categoryService.findAllParents();
@@ -78,8 +80,9 @@ export class CategoryController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Get('/options')
-  @UseGuards(AuthGuard('jwt'))
   async findOptions(@Res() res: Response) {
     try {
       const result = await this.categoryService.findOptions();
@@ -103,8 +106,9 @@ export class CategoryController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Post()
-  @UseGuards(AuthGuard('jwt'))
   async create(
     @Res() res: Response,
     @Request() request: any,
@@ -133,8 +137,9 @@ export class CategoryController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Put()
-  @UseGuards(AuthGuard('jwt'))
   async updateCategory(
     @Res() res: Response,
     @Request() request: any,
@@ -162,8 +167,9 @@ export class CategoryController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Delete('/many')
-  @UseGuards(AuthGuard('jwt'))
   async deleteMany(
     @Res() res: Response,
     @Body() deleteManyCategoryDto: DeleteManyCategoryDto,
@@ -190,8 +196,9 @@ export class CategoryController {
     }
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
   async deleteCategory(
     @Res() res: Response,
     @Param() deleteCategoryDto: DeleteCategoryDto,
