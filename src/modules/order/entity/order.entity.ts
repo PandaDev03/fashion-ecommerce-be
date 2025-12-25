@@ -1,11 +1,31 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-import { BaseEntity } from 'src/common/entities/base.entity';
 import { OrderDetail } from 'src/modules/order-details/entity/order-details.entity';
 import { User } from 'src/modules/user/entity/user.entity';
 
 @Entity('orders')
-export class Order extends BaseEntity {
+export class Order {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @CreateDateColumn({ name: 'created_at', nullable: true })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', nullable: true })
+  updatedAt: Date;
+
+  @Column({ type: 'uuid', name: 'updated_by', nullable: true })
+  updatedBy: string;
+
   @Column({ name: 'order_number', length: 50, unique: true })
   orderNumber: string;
 
@@ -91,18 +111,18 @@ export class Order extends BaseEntity {
   @Column({ name: 'cancellation_reason', type: 'text', nullable: true })
   cancellationReason?: string;
 
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'user_id' })
-  user?: User;
+  // @ManyToOne(() => User, { nullable: true })
+  // @JoinColumn({ name: 'user_id' })
+  // user?: User;
 
   @OneToMany(() => OrderDetail, (detail) => detail.order, {
     cascade: true,
   })
   orderDetails?: OrderDetail[];
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'created_by' })
-  creator?: User;
+  // @ManyToOne(() => User)
+  // @JoinColumn({ name: 'created_by' })
+  // creator?: User;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'updated_by' })

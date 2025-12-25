@@ -91,8 +91,8 @@ export class OrderService {
       paymentStatus: 'unpaid',
       paymentMethod: createOrderDto.paymentMethod || 'cod',
       userId: createOrderDto.userId,
-      createdBy: createOrderDto.userId,
-      updatedBy: createOrderDto.userId,
+      // createdBy: createOrderDto.userId,
+      // updatedBy: createOrderDto.userId,
     };
 
     const orderDetails: Partial<OrderDetail>[] = orderItems.map((item) => ({
