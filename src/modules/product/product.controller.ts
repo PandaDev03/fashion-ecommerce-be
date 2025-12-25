@@ -30,13 +30,17 @@ import { GetProductDto } from './dto/get-product.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
+import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  // @UseGuards(AuthGuard('jwt'))
+  @Public()
   @Get()
-  @UseGuards(AuthGuard('jwt'))
   async findAll(@Res() res: Response, @Query() getProductDto: GetProductDto) {
     try {
       const { page, pageSize } = getProductDto;
@@ -65,6 +69,7 @@ export class ProductController {
     }
   }
 
+  @Public()
   @Get('/slug')
   // @UseGuards(AuthGuard('jwt'))
   async findBySlug(
@@ -93,6 +98,7 @@ export class ProductController {
     }
   }
 
+  @Roles(UserRole.ADMIN)
   @Get('/product-option')
   @UseGuards(AuthGuard('jwt'))
   async getProductOptions(

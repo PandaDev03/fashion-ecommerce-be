@@ -51,8 +51,12 @@ export class AuthService {
     return null;
   }
 
-  async getAccessToken(userId: string, userName: string): Promise<string> {
-    const payload = { sub: userId, username: userName };
+  async getAccessToken(
+    userId: string,
+    userName: string,
+    role: string,
+  ): Promise<string> {
+    const payload = { sub: userId, username: userName, role: role };
 
     return this.jwtService.signAsync(payload, {
       secret: this.configService.get('JWT_ACCESS_SECRET'),
@@ -60,7 +64,7 @@ export class AuthService {
   }
 
   async getAndSaveRefreshToken(userId: string): Promise<string> {
-    const payload = { sub: userId };
+    const payload = { sub: userId }; // role?
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
@@ -130,7 +134,7 @@ export class AuthService {
       throw new BadRequestException('Mật khẩu không chính xác');
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.getAccessToken(currentUser.id, currentUser.name),
+      this.getAccessToken(currentUser.id, currentUser.name, currentUser.role),
       this.getAndSaveRefreshToken(currentUser.id),
     ]);
     return { accessToken, refreshToken };
@@ -141,7 +145,7 @@ export class AuthService {
     if (!currentUser) throw new NotFoundException(`Không tìm thấy người dùng`);
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.getAccessToken(currentUser.id, currentUser.name),
+      this.getAccessToken(currentUser.id, currentUser.name, currentUser.role),
       this.getAndSaveRefreshToken(currentUser.id),
     ]);
 
