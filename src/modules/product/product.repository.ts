@@ -14,46 +14,18 @@ export class ProductRepository {
   ) {}
 
   async findAll(getProductDto: GetProductDto) {
-    const { page, pageSize, search, categoryId, brandId, status } =
-      getProductDto;
+    const {
+      page,
+      pageSize,
+      search,
+      status,
+      brandId,
+      categoryId,
+      createdTo,
+      createdFrom,
+    } = getProductDto;
 
     const queryBuilder = this.productRepository.createQueryBuilder('product');
-
-    // queryBuilder
-    //   .leftJoinAndSelect('product.creator', 'creator')
-    //   .leftJoinAndSelect('product.updater', 'updater');
-
-    // queryBuilder
-    //   .leftJoinAndSelect('product.category', 'category')
-    //   .leftJoinAndSelect('product.brand', 'brand')
-    //   .leftJoinAndSelect('product.images', 'images');
-
-    // queryBuilder
-    //   .leftJoinAndSelect('product.variants', 'variant')
-    //   .leftJoinAndSelect('variant.images', 'variantImages')
-    //   .leftJoinAndSelect('variant.optionValues', 'variantOptionValue')
-    //   .leftJoinAndSelect('variantOptionValue.optionValue', 'optionValue');
-
-    // queryBuilder
-    //   .leftJoinAndSelect('product.variants', 'variant')
-    //   .leftJoinAndSelect('variant.imageMappings', 'imageMapping')
-    //   .leftJoinAndSelect('imageMapping.image', 'variantImage')
-    //   .leftJoinAndSelect('variant.optionValues', 'variantOptionValue')
-    //   .leftJoinAndSelect('variantOptionValue.optionValue', 'optionValue');
-
-    // queryBuilder
-    //   .leftJoinAndSelect('product.options', 'productOption')
-    //   .leftJoinAndSelect('productOption.values', 'productOptionValue');
-
-    // queryBuilder
-    //   .orderBy('product.createdAt', 'DESC')
-    //   .addOrderBy('images.position', 'ASC')
-    //   .addOrderBy('productOption.position', 'ASC')
-    //   .addOrderBy('productOptionValue.position', 'ASC')
-    //   .addOrderBy('variant.position', 'ASC')
-    //   // .addOrderBy('variantImages.position', 'ASC')
-    //   // .addOrderBy('imageMapping.position', 'ASC');
-    //   .addOrderBy('variantImage.position', 'ASC');
 
     queryBuilder
       .leftJoinAndSelect('product.creator', 'creator')
@@ -71,15 +43,29 @@ export class ProductRepository {
       .leftJoinAndSelect('variant.optionValues', 'variantOptionValue')
       .leftJoinAndSelect('variantOptionValue.optionValue', 'optionValue');
 
-    queryBuilder.orderBy('product.createdAt', 'DESC');
-    // .addOrderBy('images.position', 'ASC')
-    // .addOrderBy('productOption.position', 'ASC')
-    // .addOrderBy('productOptionValue.position', 'ASC');
+    if (search && search.trim() !== '')
+      queryBuilder.andWhere(
+        'LOWER(product.name) LIKE :search OR LOWER(product.slug) LIKE :search',
+        { search: `%${search.toLowerCase()}%` },
+      );
 
-    queryBuilder;
-    // .addOrderBy('variant.position', 'ASC', 'NULLS LAST')
-    // .addOrderBy('imageMapping.position', 'ASC', 'NULLS LAST')
-    // .addOrderBy('variantImage.position', 'ASC', 'NULLS LAST');
+    if (createdFrom)
+      queryBuilder.andWhere('product.createdAt >= :createdFrom', {
+        createdFrom,
+      });
+
+    if (createdTo)
+      queryBuilder.andWhere('product.createdAt <= :createdTo', { createdTo });
+
+    if (status) queryBuilder.andWhere('product.status = :status', { status });
+
+    if (brandId)
+      queryBuilder.andWhere('product.brandId = :brandId', { brandId });
+
+    if (categoryId)
+      queryBuilder.andWhere('product.categoryId = :categoryId', { categoryId });
+
+    queryBuilder.orderBy('product.createdAt', 'DESC');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
     if (skip !== undefined) queryBuilder.skip(skip);
@@ -114,11 +100,8 @@ export class ProductRepository {
       .leftJoinAndSelect('product.options', 'productOption')
       .leftJoinAndSelect('productOption.values', 'productOptionValue')
 
-      // .orderBy('product.createdAt', 'DESC')
-      // .addOrderBy('images.position', 'ASC')
       .addOrderBy('productOption.position', 'ASC')
-      // .addOrderBy('optionValue.position', 'ASC') //
-      .addOrderBy('variantOptionValue.position', 'ASC') //
+      .addOrderBy('variantOptionValue.position', 'ASC')
       .addOrderBy('productOptionValue.position', 'ASC')
       .addOrderBy('variant.position', 'ASC')
       .addOrderBy('variantImage.position', 'ASC');

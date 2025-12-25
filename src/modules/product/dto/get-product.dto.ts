@@ -1,10 +1,5 @@
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUUID,
-  MaxLength,
-} from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { BaseQueryDto } from 'src/common/dto/base-query.dto';
 
 export class GetProductDto extends BaseQueryDto {
@@ -23,4 +18,18 @@ export class GetProductDto extends BaseQueryDto {
   @IsOptional()
   @IsEnum(['active', 'inactive', 'draft'])
   status?: 'active' | 'inactive' | 'draft';
+
+  @IsOptional()
+  @IsDate({
+    message: 'Ngày tạo từ "createdFrom" phải là định dạng ngày tháng hợp lệ',
+  })
+  @Type(() => Date)
+  createdFrom?: Date;
+
+  @IsOptional()
+  @IsDate({
+    message: 'Ngày tạo đến "createdTo" phải là định dạng ngày tháng hợp lệ',
+  })
+  @Type(() => Date)
+  createdTo?: Date;
 }

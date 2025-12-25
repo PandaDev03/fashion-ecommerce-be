@@ -24,3 +24,15 @@ export const cloudinaryStorageImage = new CloudinaryStorage({
     };
   },
 });
+
+export const cloudinaryStorageAvatar = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: 'fashion-ecommerce/avatars',
+      allowedFormats: ['jpg', 'png', 'jpeg', 'webp'],
+      transformation: [{ width: 500, height: 500, crop: 'limit' }],
+      public_id: `avatar-${Date.now()}-${file.originalname.split('.')[0]}`,
+    };
+  },
+});
