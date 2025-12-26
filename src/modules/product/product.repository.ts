@@ -65,7 +65,13 @@ export class ProductRepository {
     if (categoryId)
       queryBuilder.andWhere('product.categoryId = :categoryId', { categoryId });
 
-    queryBuilder.orderBy('product.createdAt', 'DESC');
+    // queryBuilder.orderBy('product.createdAt', 'DESC')
+    queryBuilder
+      .addOrderBy('productOption.position', 'ASC')
+      .addOrderBy('variantOptionValue.position', 'ASC')
+      .addOrderBy('productOptionValue.position', 'ASC')
+      .addOrderBy('variant.position', 'ASC')
+      .addOrderBy('variantImage.position', 'ASC');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
     if (skip !== undefined) queryBuilder.skip(skip);
