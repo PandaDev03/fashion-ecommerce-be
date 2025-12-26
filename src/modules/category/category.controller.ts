@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 
+import { Public } from 'src/common/decorators/public.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/common/enums/role.enum';
 import { createPaginatedResponse } from 'src/common/utils/function';
@@ -55,7 +56,8 @@ export class CategoryController {
   }
 
   // @UseGuards(AuthGuard('jwt'))
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
+  @Public()
   @Get('/parents')
   async findAllParents(@Res() res: Response) {
     try {
@@ -81,7 +83,8 @@ export class CategoryController {
   }
 
   // @UseGuards(AuthGuard('jwt'))
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
+  @Public()
   @Get('/options')
   async findOptions(@Res() res: Response) {
     try {

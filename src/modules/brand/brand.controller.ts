@@ -10,11 +10,12 @@ import {
   Req,
   Request,
   Res,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 import { createPaginatedResponse } from 'src/common/utils/function';
 import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
@@ -22,9 +23,6 @@ import { DeleteBrandDto } from './dto/delete-brand.dto';
 import { DeleteManyBrandDto } from './dto/delete-many-brand.dto';
 import { GetBrandDto } from './dto/get-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
-import { RolesGuard } from 'src/common/guards/role.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from 'src/common/enums/role.enum';
 
 @Controller('brands')
 export class BrandController {
@@ -62,7 +60,8 @@ export class BrandController {
   }
 
   // @UseGuards(AuthGuard('jwt'))
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
+  @Public()
   @Get('/options')
   async findOptions(@Res() res: Response) {
     try {

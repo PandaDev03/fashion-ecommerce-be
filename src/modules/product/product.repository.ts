@@ -21,8 +21,12 @@ export class ProductRepository {
       status,
       brandId,
       categoryId,
+      brandSlugs,
+      categorySlugs,
       createdTo,
       createdFrom,
+      minPrice,
+      maxPrice,
     } = getProductDto;
 
     const queryBuilder = this.productRepository.createQueryBuilder('product');
@@ -65,7 +69,59 @@ export class ProductRepository {
     if (categoryId)
       queryBuilder.andWhere('product.categoryId = :categoryId', { categoryId });
 
-    queryBuilder.orderBy('product.createdAt', 'DESC');
+    if (brandSlugs?.length)
+      queryBuilder.andWhere('brand.slug IN (:...brandSlugs)', {
+        brandSlugs,
+      });
+
+    if (categorySlugs?.length) {
+      queryBuilder.leftJoin('category.parent', 'parentCategory');
+
+      queryBuilder.andWhere(
+        '(category.slug IN (:...categorySlugs) OR parentCategory.slug IN (:...categorySlugs))',
+        { categorySlugs },
+      );
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      const priceConditions: string[] = [];
+      const params: any = {};
+
+      if (minPrice !== undefined && maxPrice !== undefined) {
+        priceConditions.push(
+          '((product.hasVariants = false AND product.price BETWEEN :minPrice AND :maxPrice) OR ' +
+            '(product.hasVariants = true AND variant.price BETWEEN :minPrice AND :maxPrice))',
+        );
+
+        params.minPrice = minPrice;
+        params.maxPrice = maxPrice;
+      } else if (minPrice !== undefined) {
+        priceConditions.push(
+          '((product.hasVariants = false AND product.price >= :minPrice) OR ' +
+            '(product.hasVariants = true AND variant.price >= :minPrice))',
+        );
+
+        params.minPrice = minPrice;
+      } else if (maxPrice !== undefined) {
+        priceConditions.push(
+          '((product.hasVariants = false AND product.price <= :maxPrice) OR ' +
+            '(product.hasVariants = true AND variant.price <= :maxPrice))',
+        );
+
+        params.maxPrice = maxPrice;
+      }
+
+      if (priceConditions.length > 0)
+        queryBuilder.andWhere(priceConditions.join(' OR '), params);
+    }
+
+    // queryBuilder.orderBy('product.createdAt', 'DESC')
+    queryBuilder
+      .addOrderBy('productOption.position', 'ASC')
+      .addOrderBy('variantOptionValue.position', 'ASC')
+      .addOrderBy('productOptionValue.position', 'ASC')
+      .addOrderBy('variant.position', 'ASC')
+      .addOrderBy('variantImage.position', 'ASC');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
     if (skip !== undefined) queryBuilder.skip(skip);

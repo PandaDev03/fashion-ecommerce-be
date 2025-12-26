@@ -8,19 +8,17 @@ import {
   Query,
   Request,
   Res,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 import { createPaginatedResponse } from 'src/common/utils/function';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderService } from './order.service';
 import { GetOrderDto } from './dto/get-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { Public } from 'src/common/decorators/public.decorator';
-import { UserRole } from 'src/common/enums/role.enum';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { OrderService } from './order.service';
 
 @Controller('orders')
 export class OrderController {
@@ -117,7 +115,7 @@ export class OrderController {
   }
 
   // @UseGuards(AuthGuard('jwt'))
-  @Roles(UserRole.USER)
+  @Roles(UserRole.USER, UserRole.ADMIN)
   @Get('user')
   async getOrderByUserId(@Request() req: any, @Res() res: Response) {
     try {
