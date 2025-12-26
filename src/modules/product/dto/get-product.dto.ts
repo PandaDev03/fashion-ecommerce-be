@@ -3,9 +3,11 @@ import {
   IsArray,
   IsDate,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Min,
 } from 'class-validator';
 import { BaseQueryDto } from 'src/common/dto/base-query.dto';
 
@@ -57,4 +59,16 @@ export class GetProductDto extends BaseQueryDto {
   })
   @Type(() => Date)
   createdTo?: Date;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxPrice?: number;
 }

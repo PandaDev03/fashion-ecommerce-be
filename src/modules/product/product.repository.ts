@@ -25,6 +25,8 @@ export class ProductRepository {
       categorySlugs,
       createdTo,
       createdFrom,
+      minPrice,
+      maxPrice,
     } = getProductDto;
 
     const queryBuilder = this.productRepository.createQueryBuilder('product');
@@ -79,6 +81,38 @@ export class ProductRepository {
         '(category.slug IN (:...categorySlugs) OR parentCategory.slug IN (:...categorySlugs))',
         { categorySlugs },
       );
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      const priceConditions: string[] = [];
+      const params: any = {};
+
+      if (minPrice !== undefined && maxPrice !== undefined) {
+        priceConditions.push(
+          '((product.hasVariants = false AND product.price BETWEEN :minPrice AND :maxPrice) OR ' +
+            '(product.hasVariants = true AND variant.price BETWEEN :minPrice AND :maxPrice))',
+        );
+
+        params.minPrice = minPrice;
+        params.maxPrice = maxPrice;
+      } else if (minPrice !== undefined) {
+        priceConditions.push(
+          '((product.hasVariants = false AND product.price >= :minPrice) OR ' +
+            '(product.hasVariants = true AND variant.price >= :minPrice))',
+        );
+
+        params.minPrice = minPrice;
+      } else if (maxPrice !== undefined) {
+        priceConditions.push(
+          '((product.hasVariants = false AND product.price <= :maxPrice) OR ' +
+            '(product.hasVariants = true AND variant.price <= :maxPrice))',
+        );
+
+        params.maxPrice = maxPrice;
+      }
+
+      if (priceConditions.length > 0)
+        queryBuilder.andWhere(priceConditions.join(' OR '), params);
     }
 
     // queryBuilder.orderBy('product.createdAt', 'DESC')
