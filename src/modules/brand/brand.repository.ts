@@ -54,7 +54,10 @@ export class BrandRepository {
   }
 
   async findOptions() {
-    return await this.brandRepository.find({ select: ['id', 'name'] });
+    return await this.brandRepository.find({
+      select: ['id', 'name', 'slug'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async update(updateBrandDto: IUpdate<UpdateBrandDto>) {

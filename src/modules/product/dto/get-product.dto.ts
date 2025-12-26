@@ -1,5 +1,12 @@
-import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDate,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { BaseQueryDto } from 'src/common/dto/base-query.dto';
 
 export class GetProductDto extends BaseQueryDto {
@@ -14,6 +21,24 @@ export class GetProductDto extends BaseQueryDto {
   @IsOptional()
   @IsUUID('4', { message: 'ID của thương hiệu phải là định dạng UUID hợp lệ' })
   brandId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map((s) => s.trim());
+    return value;
+  })
+  categorySlugs?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map((s) => s.trim());
+    return value;
+  })
+  brandSlugs?: string[];
 
   @IsOptional()
   @IsEnum(['active', 'inactive', 'draft'])

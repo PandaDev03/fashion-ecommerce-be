@@ -21,6 +21,8 @@ export class ProductRepository {
       status,
       brandId,
       categoryId,
+      brandSlugs,
+      categorySlugs,
       createdTo,
       createdFrom,
     } = getProductDto;
@@ -64,6 +66,20 @@ export class ProductRepository {
 
     if (categoryId)
       queryBuilder.andWhere('product.categoryId = :categoryId', { categoryId });
+
+    if (brandSlugs?.length)
+      queryBuilder.andWhere('brand.slug IN (:...brandSlugs)', {
+        brandSlugs,
+      });
+
+    if (categorySlugs?.length) {
+      queryBuilder.leftJoin('category.parent', 'parentCategory');
+
+      queryBuilder.andWhere(
+        '(category.slug IN (:...categorySlugs) OR parentCategory.slug IN (:...categorySlugs))',
+        { categorySlugs },
+      );
+    }
 
     // queryBuilder.orderBy('product.createdAt', 'DESC')
     queryBuilder
