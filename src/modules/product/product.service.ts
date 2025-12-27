@@ -114,8 +114,8 @@ export class ProductService {
   }
 
   async findBySlug(getProductBySlugDto: GetProductBySlugDto) {
-    const { slug } = getProductBySlugDto;
-    return await this.productRepository.findBySlug(slug);
+    const { slug, includeVariants } = getProductBySlugDto;
+    return await this.productRepository.findBySlug(slug, includeVariants);
   }
 
   async getProductOptions(productId: string) {
