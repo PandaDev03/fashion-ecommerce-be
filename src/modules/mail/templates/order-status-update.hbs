@@ -1,0 +1,335 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Cập nhật đơn hàng</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        background-color: #f4f4f4;
+        -webkit-font-smoothing: antialiased;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      img {
+        border: 0;
+        outline: none;
+        text-decoration: none;
+        display: block;
+      }
+
+      /* Container chính */
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        padding: 40px 20px;
+        border-radius: 4px;
+      }
+
+      /* Typography */
+      h1 {
+        margin: 0 0 20px;
+        font-size: 24px;
+        color: #333333;
+        text-align: center;
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 15px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #555555;
+      }
+
+      /* Status Section */
+      .status-icon {
+        display: flex;
+        justify-content: center;
+      }
+      .status-message {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 16px;
+        color: #333;
+      }
+
+      /* Summary Grid (Giống ảnh Chewy) */
+      .summary-order {
+        background-color: #f9f9f9;
+        border: 1px solid #eeeeee;
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 30px;
+      }
+      .summary-shipping {
+        background-color: #f9f9f9;
+        border: 1px solid #eeeeee;
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 30px;
+      }
+      .summary-header {
+        font-weight: bold;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 10px;
+        display: block;
+      }
+      .summary-content {
+        font-size: 14px;
+        color: #333;
+        line-height: 1.6;
+      }
+      .total-price {
+        color: #d32f2f;
+        font-weight: bold;
+        font-size: 16px;
+        margin-top: 5px;
+        display: block;
+      }
+
+      /* Button */
+      .btn-track {
+        background-color: #2196f3;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 12px 25px;
+        border-radius: 4px;
+        font-weight: bold;
+        display: inline-block;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* Items Table */
+      .items-table {
+        width: 100%;
+        margin-top: 20px;
+      }
+      .items-table th {
+        padding: 10px;
+        border-bottom: 1px solid #eeeeee;
+        background-color: #f9f9f9;
+      }
+      .items-table td {
+        padding: 15px 0;
+        vertical-align: top;
+      }
+      .item-img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #eee;
+      }
+      .item-info {
+        padding-left: 15px;
+      }
+      .item-name {
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+        display: block;
+        margin-bottom: 5px;
+      }
+      .item-attribute {
+        color: #888;
+        font-size: 14px;
+        display: block;
+        margin-bottom: 5px;
+      }
+      .item-meta {
+        color: #888;
+        font-size: 12px;
+      }
+      .item-price {
+        text-align: right;
+        font-weight: bold;
+        color: #333;
+        white-space: nowrap;
+      }
+
+      /* Footer */
+      .footer {
+        text-align: center;
+        margin-top: 40px;
+        font-size: 12px;
+        color: #999;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class='container'>
+      <div style='text-align: center; margin-bottom: 30px;'>
+        <img width='150' alt='Logo' src='{{logoUrl}}' style='margin: 0 auto;' />
+      </div>
+
+      <h1>{{statusText}}</h1>
+
+      <div class='status-icon'>
+        <img
+          alt='Logo'
+          width='70'
+          src='{{statusIcon}}'
+          style='margin: 0 auto; display: inline-block; border: 0; outline: none;'
+        />
+      </div>
+      <div class='status-message'>
+        {{statusMessage}}<br />
+        <span style='font-size: 13px; color: #888;'>(Vui lòng cho phép 24h để
+          cập nhật lộ trình)</span>
+      </div>
+
+      <table width='100%' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td
+            class='summary-order'
+            width='50%'
+            valign='top'
+            style='padding-right: 15px; border-right: 1px solid #eee;'
+          >
+            <span class='summary-header'>THÔNG TIN ĐƠN HÀNG:</span>
+            <div class='summary-content'>
+              <strong>Mã đơn:</strong>
+              {{orderNumber}}<br />
+              <strong>Ngày đặt:</strong>
+              {{orderDate}}<br />
+              <strong>Tổng cộng:</strong>
+              <span>{{totalFormatted}}</span>
+            </div>
+          </td>
+          <td
+            width='50%'
+            valign='top'
+            class='summary-shipping'
+            style='padding-left: 15px;'
+          >
+            <span class='summary-header'>ĐỊA CHỈ GIAO HÀNG:</span>
+            <div class='summary-content'>
+              <strong>{{customerName}}</strong><br />
+              {{customerAddress}}
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <table
+        class='items-table'
+        width='100%'
+        cellpadding='0'
+        cellspacing='0'
+        style='width: 100%; margin-top: 20px; border-collapse: collapse;'
+      >
+        <thead>
+          <tr>
+            <th
+              align='left'
+              style='width: 70%; padding: 10px; border-bottom: 1px solid #eeeeee; background-color: #f9f9f9; color: #666; font-size: 12px; text-transform: uppercase;'
+            >Sản phẩm</th>
+            <th
+              align='center'
+              style='width: 10%; padding: 10px; border-bottom: 1px solid #eeeeee; background-color: #f9f9f9; color: #666; font-size: 12px; text-transform: uppercase;'
+            >SL</th>
+            <th
+              align='right'
+              style='width: 20%; padding: 10px; border-bottom: 1px solid #eeeeee; background-color: #f9f9f9; color: #666; font-size: 12px; text-transform: uppercase;'
+            >Giá</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items}}
+            <tr>
+              <td style='padding: 0; vertical-align: top;'>
+                <table width='100%' cellpadding='0' cellspacing='0'>
+                  <tr>
+                    <td width='90' valign='top'>
+                      <img
+                        src='{{this.imageUrl}}'
+                        alt='Product Image'
+                        class='item-img'
+                        width='80'
+                        height='80'
+                        style='width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #eee;'
+                      />
+                    </td>
+                    <td valign='top' style='padding-left: 10px;'>
+                      <span
+                        class='item-name'
+                        style='font-weight: 600; color: #333; font-size: 14px; display: block; margin-bottom: 4px; line-height: 1.4;'
+                      >{{this.productName}}</span>
+
+                      {{#if this.variantText}}
+                        <span
+                          class='item-attribute'
+                          style='color: #888; font-size: 13px; display: block;'
+                        >{{this.variantText}}</span>
+                      {{/if}}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+
+              <td
+                align='center'
+                style='padding: 15px 0; vertical-align: top; font-size: 14px; color: #333;'
+              >
+                {{this.quantity}}
+              </td>
+
+              <td
+                align='right'
+                class='item-price'
+                style='padding: 15px 0; vertical-align: top; font-weight: bold; color: #333; white-space: nowrap;'
+              >
+                {{this.price}}
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <table width='100%' style='margin-top: 20px; border-top: 2px solid #333'>
+        <tr>
+          <td align='right' style='padding: 5px 0; color: #666;'>Tạm tính:</td>
+          <td
+            align='right'
+            width='100'
+            style='padding: 5px 0; font-weight: bold;'
+          >{{subtotalFormatted}}</td>
+        </tr>
+        <tr>
+          <td align='right' style='padding: 5px 0; color: #666;'>Phí vận chuyển:</td>
+          <td
+            align='right'
+            style='padding: 5px 0; font-weight: bold;'
+          >{{shippingFeeFormatted}}</td>
+        </tr>
+        <tr>
+          <td
+            align='right'
+            style='padding: 10px 0; font-size: 18px; font-weight: bold; color: #333;'
+          >TỔNG CỘNG:</td>
+          <td
+            align='right'
+            style='padding: 10px 0; font-size: 18px; font-weight: bold;'
+          >{{totalFormatted}}</td>
+        </tr>
+      </table>
+
+      <div class='footer'>
+        <p>Nếu bạn có thắc mắc, vui lòng liên hệ bộ phận CSKH.<br />
+          &copy;
+          {{currentYear}}
+          Your Company Name. All rights reserved.</p>
+      </div>
+    </div>
+
+  </body>
+</html>

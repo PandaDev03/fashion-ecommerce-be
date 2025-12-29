@@ -6,15 +6,16 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
+import { MailService } from '../mail/mail.service';
 import { OrderDetail } from '../order-details/entity/order-details.entity';
 import { ProductVariant } from '../product/entities/product-variant.entity';
 import { Product } from '../product/entities/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { GetOrderDto } from './dto/get-order.dto';
 import { OrderResponseDto, VariantAttributes } from './dto/order-response.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { Order } from './entity/order.entity';
 import { OrderRepository } from './order.repository';
-import { GetOrderDto } from './dto/get-order.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 interface OrderItemData {
   productId: string;
@@ -37,6 +38,7 @@ export class OrderService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(ProductVariant)
     private readonly variantRepo: Repository<ProductVariant>,
+    private readonly mailService: MailService,
   ) {}
 
   private mapToOrderResponse(order: Order): OrderResponseDto {
@@ -122,7 +124,16 @@ export class OrderService {
       }
     }
 
-    return this.mapToOrderResponse(order);
+    const orderResponse = this.mapToOrderResponse(order);
+
+    try {
+      await this.mailService.sendOrderConfirmation(orderResponse);
+    } catch (error) {
+      console.error('Failed to send order confirmation email:', error);
+    }
+
+    return orderResponse;
+    // return this.mapToOrderResponse(order);
   }
 
   async migrateOrders(fromUserId: string, toUserId: string) {
@@ -306,11 +317,34 @@ export class OrderService {
 
     this.validateStatusTransition(order, updateStatusDto);
 
-    return this.orderRepository.updateOrderStatus(
+    const result = await this.orderRepository.updateOrderStatus(
       id,
       updateStatusDto.status,
       userId,
       updateStatusDto.cancellationReason,
     );
+
+    if (result) {
+      const updatedOrder = await this.findOrderById(id);
+
+      try {
+        await this.mailService.sendOrderStatusUpdate(
+          updatedOrder,
+          updateStatusDto.status,
+          updateStatusDto.cancellationReason,
+        );
+      } catch (error) {
+        console.error('Failed to send order status update email:', error);
+      }
+    }
+
+    return result;
+
+    // return this.orderRepository.updateOrderStatus(
+    //   id,
+    //   updateStatusDto.status,
+    //   userId,
+    //   updateStatusDto.cancellationReason,
+    // );
   }
 }
