@@ -1,0 +1,381 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Xác nhận đơn hàng</title>
+    <style>
+      body {
+        padding: 0;
+        margin: 10px 0 0 0;
+        background-color: #f4f4f4;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      table {
+        border-spacing: 0;
+        border-collapse: collapse;
+      }
+      td {
+        padding: 0;
+      }
+      img {
+        border: 0;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .header {
+        background-color: #fff8ee;
+        padding: 40px 20px;
+        text-align: center;
+        border-bottom: 2px solid #f0f0f0;
+      }
+      .logo-container {
+        margin-bottom: 20px;
+      }
+      .header h1 {
+        margin: 0 0 10px;
+        font-size: 24px;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .header p {
+        margin: 0;
+        color: #555;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .section-title {
+        text-align: center;
+        margin: 30px 0 10px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+      }
+      .order-date {
+        text-align: center;
+        color: #888;
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+
+      .product-card {
+        padding: 10px;
+        margin: 0 20px 20px;
+        border-radius: 12px;
+      }
+      .product-table {
+        width: 100%;
+      }
+      .product-img {
+        width: 120px;
+        height: 120px;
+        border-radius: 8px;
+        object-fit: cover;
+        background-color: #ddd;
+      }
+      .product-info {
+        padding-left: 20px;
+        vertical-align: top;
+        font-size: 14px;
+        color: #333;
+      }
+      .product-title {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 4px;
+        display: block;
+      }
+      .price-row {
+        display: block;
+        margin-bottom: 12px;
+      }
+      .price-original {
+        text-decoration: line-through;
+        color: #888;
+        margin-right: 8px;
+      }
+      .price-final {
+        color: #008060;
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .meta-table td {
+        padding-bottom: 4px;
+        color: #555;
+        font-size: 13px;
+      }
+      .meta-label {
+        width: 90px;
+        color: #777;
+      }
+      .total-section {
+        padding: 0 40px;
+        margin-bottom: 30px;
+      }
+      .total-table {
+        width: 100%;
+        font-size: 14px;
+        color: #333;
+      }
+      .total-table td {
+        padding: 6px 0;
+      }
+      .total-label {
+        text-align: left;
+      }
+      .total-value {
+        text-align: right;
+      }
+      .total-final {
+        font-size: 18px;
+        font-weight: bold;
+        color: #008060;
+        border-top: 1px solid #ddd;
+        padding-top: 10px !important;
+      }
+
+      .address-section {
+        padding: 0 20px;
+        margin-bottom: 30px;
+      }
+      .cols-table {
+        width: 100%;
+      }
+      .col-td {
+        width: 50%;
+        vertical-align: top;
+        padding: 0 10px;
+      }
+      .col-box {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        height: 100%;
+      }
+      .col-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: block;
+        font-size: 15px;
+      }
+      .address-text {
+        font-size: 13px;
+        line-height: 1.6;
+        color: #555;
+      }
+
+      .cta-container {
+        text-align: center;
+        margin: 30px 0;
+      }
+      .cta-btn {
+        background-color: #008060;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 12px 30px;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 16px;
+        display: inline-block;
+      }
+
+      .footer {
+        background-color: #f9f9f9;
+        padding: 30px 20px;
+        text-align: center;
+        font-size: 13px;
+        color: #666;
+        border-top: 1px solid #eee;
+      }
+      .footer-links {
+        margin: 15px 0;
+      }
+      .footer-links a {
+        color: #333;
+        text-decoration: none;
+        margin: 0 10px;
+        font-weight: bold;
+      }
+      .contact-link {
+        color: #008060;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class='email-container'>
+      <div class='header'>
+        <div class='logo-container'>
+          <img
+            alt='Logo'
+            width='100'
+            src='{{logoUrl}}'
+            style='display:block; margin:0 auto;'
+          />
+        </div>
+        <h1>XÁC NHẬN ĐƠN HÀNG</h1>
+        <p>
+          Chào
+          <strong>{{customerName}}</strong>, cảm ơn bạn đã đặt hàng!<br />
+          Chúng tôi đã nhận được đơn hàng và sẽ thông báo ngay khi gói hàng được
+          gửi đi.
+        </p>
+      </div>
+
+      <div class='section-title'>Chi tiết đơn hàng</div>
+      <div class='order-date'>Ngày đặt: {{orderDate}}</div>
+
+      {{#each items}}
+        <div class='product-card'>
+          <table class='product-table'>
+            <tr>
+              <td width='130' style='vertical-align: top;'>
+                {{#if imageUrl}}
+                  <img
+                    src='{{imageUrl}}'
+                    alt='{{productName}}'
+                    class='product-img'
+                  />
+                {{else}}
+                  <div
+                    class='product-img'
+                    style='background: #ddd; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px;'
+                  >Không có ảnh</div>
+                {{/if}}
+              </td>
+
+              <td class='product-info'>
+                <span class='product-title'>{{productName}}</span>
+
+                <div class='price-row'>
+                  <span class='price-final'>{{totalPriceFormatted}}đ</span>
+                </div>
+
+                <table class='meta-table'>
+                  {{#if variantAttributes}}
+                    <tr>
+                      <tr>
+                        <td class='meta-label'>Phân loại:</td>
+                        <td>{{variantText}}</td>
+                      </tr>
+                    </tr>
+                  {{/if}}
+
+                  <tr>
+                    <td class='meta-label'>Số lượng:</td>
+                    <td>{{quantity}}</td>
+                  </tr>
+
+                  <tr>
+                    <td class='meta-label'>Mã SKU:</td>
+                    <td style='color: #999;'>{{productVariantId}}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      {{/each}}
+
+      <div class='section-title'>Tổng quan thanh toán</div>
+      <div class='total-section'>
+        <table class='total-table'>
+          <tr>
+            <td class='total-label'>Tạm tính</td>
+            <td class='total-value'>{{subtotalFormatted}}</td>
+          </tr>
+          <tr>
+            <td class='total-label'>Phí vận chuyển</td>
+            <td class='total-value'>{{shippingFeeFormatted}}</td>
+          </tr>
+          <tr>
+            <td class='total-label total-final'>Tổng thanh toán:</td>
+            <td class='total-value total-final'>{{totalFormatted}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class='section-title'>Thông tin giao nhận</div>
+      <div class='address-section'>
+        <table class='cols-table'>
+          <tr>
+            <td class='col-td'>
+              <div class='col-box'>
+                <span class='col-title'>Địa chỉ thanh toán</span>
+                <div class='address-text'>
+                  <strong>{{customerName}}</strong><br />
+                  {{customerAddress}}<br />
+                  {{customerCountry}}<br />
+                </div>
+              </div>
+            </td>
+            <td class='col-td'>
+              <div class='col-box'>
+                <span class='col-title'>Địa chỉ giao hàng</span>
+                <div class='address-text'>
+                  <strong>{{customerName}}</strong><br />
+                  {{customerAddress}}<br />
+                  {{customerCountry}}<br />
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class='address-section'>
+        <table class='cols-table'>
+          <tr>
+            <td class='col-td'>
+              <div class='col-box'>
+                <span class='col-title'>Phương thức thanh toán</span>
+                <div class='address-text'>{{paymentMethod}}</div>
+              </div>
+            </td>
+            <td class='col-td'>
+              <div class='col-box'>
+                <span class='col-title'>Phương thức vận chuyển</span>
+                <div class='address-text'>{{shippingMethod}}</div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class='cta-container'>
+        <a href='{{viewOrderUrl}}' class='cta-btn'>Xem chi tiết đơn hàng</a>
+      </div>
+
+      <div class='footer'>
+        <p style='margin-bottom: 5px;'><strong>Dự kiến giao hàng:</strong>
+          {{estimatedDelivery}}</p>
+        <p style='margin-top: 0;'><a
+            href='{{trackingUrl}}'
+            style='color:#008060;'
+          >Theo dõi đơn hàng tại đây</a></p>
+
+        <div class='footer-links'>
+          <a href='{{faqUrl}}'>Hỏi đáp (FAQ)</a>
+          <span style='color:#ccc;'>|</span>
+          <a href='{{returnsUrl}}'>Chính sách đổi trả</a>
+        </div>
+
+        <p>Bạn cần hỗ trợ thêm?
+          <a href='{{contactUrl}}' class='contact-link'>Liên hệ ngay</a></p>
+      </div>
+    </div>
+
+  </body>
+</html>

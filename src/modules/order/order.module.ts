@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { MailModule } from '../mail/mail.module';
 import { OrderDetail } from '../order-details/entity/order-details.entity';
 import { ProductVariant } from '../product/entities/product-variant.entity';
 import { Product } from '../product/entities/product.entity';
@@ -12,6 +13,7 @@ import { OrderService } from './order.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderDetail, Product, ProductVariant]),
+    MailModule,
   ],
   controllers: [OrderController],
   providers: [OrderService, OrderRepository],

@@ -47,7 +47,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Đặt hàng thất bại ${error?.message ?? error}`,
+        message: `Đặt hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
@@ -78,7 +78,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Đặt hàng thất bại ${error?.message ?? error}`,
+        message: `Đặt hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
@@ -109,7 +109,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Lấy thông tin đơn hàng thất bại ${error?.message ?? error}`,
+        message: `Lấy thông tin đơn hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
@@ -135,7 +135,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Lấy thông tin đơn hàng thất bại ${error?.message ?? error}`,
+        message: `Lấy thông tin đơn hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
@@ -160,7 +160,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Lấy thông tin đơn hàng thất bại ${error?.message ?? error}`,
+        message: `Lấy thông tin đơn hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
@@ -189,7 +189,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Lấy thông tin đơn hàng thất bại ${error?.message ?? error}`,
+        message: `Lấy thông tin đơn hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
@@ -221,7 +221,7 @@ export class OrderController {
     } catch (error) {
       return res.status(500).json({
         statusCode: 500,
-        message: `Cập nhật trạng thái đơn hàng thất bại ${error?.message ?? error}`,
+        message: `Cập nhật trạng thái đơn hàng thất bại: ${error?.message ?? error}`,
       });
     }
   }
