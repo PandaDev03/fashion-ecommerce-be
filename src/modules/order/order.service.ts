@@ -126,14 +126,19 @@ export class OrderService {
 
     const orderResponse = this.mapToOrderResponse(order);
 
-    try {
-      await this.mailService.sendOrderConfirmation(orderResponse);
-    } catch (error) {
-      console.error('Failed to send order confirmation email:', error);
-    }
+    this.mailService
+      .sendOrderConfirmation(orderResponse)
+      .catch((error) =>
+        console.error('Failed to send order confirmation email:', error),
+      );
+
+    // try {
+    //   await this.mailService.sendOrderConfirmation(orderResponse);
+    // } catch (error) {
+    //   console.error('Failed to send order confirmation email:', error);
+    // }
 
     return orderResponse;
-    // return this.mapToOrderResponse(order);
   }
 
   async migrateOrders(fromUserId: string, toUserId: string) {
@@ -327,24 +332,17 @@ export class OrderService {
     if (result) {
       const updatedOrder = await this.findOrderById(id);
 
-      try {
-        await this.mailService.sendOrderStatusUpdate(
+      this.mailService
+        .sendOrderStatusUpdate(
           updatedOrder,
           updateStatusDto.status,
           updateStatusDto.cancellationReason,
+        )
+        .catch((error) =>
+          console.error('Failed to send order status update email:', error),
         );
-      } catch (error) {
-        console.error('Failed to send order status update email:', error);
-      }
     }
 
     return result;
-
-    // return this.orderRepository.updateOrderStatus(
-    //   id,
-    //   updateStatusDto.status,
-    //   userId,
-    //   updateStatusDto.cancellationReason,
-    // );
   }
 }
