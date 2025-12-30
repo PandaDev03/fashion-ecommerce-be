@@ -313,7 +313,7 @@ export class RecommendationService {
         id: p.id,
         categoryId: p.categoryId,
         brandId: p.brandId,
-        price: productPrice,
+        price: productPrice || 0,
         description: p.description || '',
         name: p.name,
         slug: p.slug,
@@ -342,6 +342,14 @@ export class RecommendationService {
 
       const productsData = this.prepareProductDataForML(products);
       // this.logger.log(`Prepared ${productsData.length} products for training`);
+
+      try {
+        await firstValueFrom(
+          this.httpService.delete(`${this.mlServiceUrl}/model`),
+        );
+      } catch (e) {
+        // Ignore nếu chưa có model
+      }
 
       const response = await firstValueFrom(
         this.httpService.post(`${this.mlServiceUrl}/train`, {
@@ -422,7 +430,8 @@ export class RecommendationService {
 
       return sortedProducts;
     } catch (error) {
-      this.logger.error('Get recommendations error:', error); // --------------> LỖI
+      this.logger.error('Get recommendations error:', error);
+
       return this.getPopularProducts(limit);
     }
   }
@@ -487,7 +496,7 @@ export class RecommendationService {
   /**
    * Get popular products (fallback)
    */
-  private async getPopularProducts(limit: number = 10): Promise<Product[]> {
+  async getPopularProducts(limit: number = 10): Promise<Product[]> {
     const popularProductIds = await this.viewHistoryRepo
       .createQueryBuilder('vh')
       .select('vh.productId', 'productId')

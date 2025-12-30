@@ -1,9 +1,9 @@
-import { Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { Public } from 'src/common/decorators/public.decorator';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from 'src/common/enums/role.enum';
 import { RecommendationService } from './recommendation.service';
+import { createPaginatedResponse } from 'src/common/utils/function';
 
 @Controller('recommendations')
 export class RecommendationController {
@@ -17,19 +17,62 @@ export class RecommendationController {
   }
 
   @Public()
+  @Get('/popular')
+  async getPopularProducts(
+    @Res() res: Response,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+      const result = await this.recommendationService.getPopularProducts(limit);
+
+      if (!result)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Lấy thông tin sản phẩm thất bại',
+        });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Lấy thông tin sản phẩm thành công',
+        ...createPaginatedResponse({}, result?.length, result),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Lấy thông tin sản phẩm thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Public()
   @Get(':userIdentifier')
   async getRecommendations(
+    @Res() res: Response,
     @Param('userIdentifier') userIdentifier: string,
     @Query('limit') limit?: number,
   ) {
-    const products = await this.recommendationService.getRecommendations(
-      userIdentifier,
-      limit ? parseInt(limit.toString()) : 10,
-    );
+    try {
+      const result = await this.recommendationService.getRecommendations(
+        userIdentifier,
+        limit ? parseInt(limit.toString()) : 10,
+      );
 
-    return {
-      products,
-      total: products.length,
-    };
+      if (!result)
+        return res.status(401).json({
+          statusCode: 401,
+          message: 'Lấy thông tin sản phẩm thất bại',
+        });
+
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Lấy thông tin sản phẩm thành công',
+        ...createPaginatedResponse({}, result?.length, result),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Lấy thông tin sản phẩm thất bại: ${error?.message ?? error}`,
+      });
+    }
   }
 }
