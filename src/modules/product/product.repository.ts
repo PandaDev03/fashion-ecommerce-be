@@ -383,7 +383,8 @@ export class ProductRepository {
       .addOrderBy('variantOptionValue.position', 'ASC')
       .addOrderBy('productOptionValue.position', 'ASC')
       .addOrderBy('variant.position', 'ASC')
-      .addOrderBy('variantImage.position', 'ASC');
+      .addOrderBy('variantImage.position', 'ASC')
+      .addOrderBy('product.createdAt', 'DESC');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
     if (skip !== undefined) queryBuilder.skip(skip);
