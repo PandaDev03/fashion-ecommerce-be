@@ -18,7 +18,9 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { MailModule } from './modules/mail/mail.module';
 import { OrderDetailsModule } from './modules/order-details/order-details.module';
 import { OrderModule } from './modules/order/order.module';
+import { ProductViewHistoryModule } from './modules/product-view-history/product-view-history.module';
 import { ProductModule } from './modules/product/product.module';
+import { RecommendationModule } from './modules/recommendation/recommendation.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({
@@ -42,6 +44,8 @@ import { UserModule } from './modules/user/user.module';
     OrderModule,
     OrderDetailsModule,
     MailModule,
+    ProductViewHistoryModule,
+    RecommendationModule,
   ],
   controllers: [AppController],
   providers: [
