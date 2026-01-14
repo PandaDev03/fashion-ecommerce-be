@@ -21,6 +21,7 @@ interface ValidCartItem {
   stock: string;
   quantity: number;
   status: string;
+  hasVariant: boolean;
   variant: any;
   category: { id: string; name: string } | null;
   brand: { id: string; name: string } | null;
@@ -339,6 +340,7 @@ export class CartService {
           stock: variant.stock.toString(),
           quantity: cartItem.quantity,
           status: product.status,
+          hasVariant: product.hasVariants,
           variant: {
             id: variant.id,
             productId: variant.productId,
@@ -474,6 +476,7 @@ export class CartService {
           stock: (product.stock ?? 0).toString(),
           quantity: cartItem.quantity,
           status: product.status,
+          hasVariant: product.hasVariants,
           variant: null,
           category: product.category
             ? {

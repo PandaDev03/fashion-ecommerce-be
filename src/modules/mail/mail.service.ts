@@ -43,6 +43,7 @@ export class MailService {
       note: order.note,
       items: order.items.map((item) => ({
         ...item,
+        productVariantId: item?.productVariantId ?? '-',
         unitPriceFormatted: item.unitPrice.toLocaleString('vi-VN'),
         totalPriceFormatted: item.totalPrice.toLocaleString('vi-VN'),
         variantText:
