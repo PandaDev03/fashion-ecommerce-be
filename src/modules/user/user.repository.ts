@@ -11,6 +11,13 @@ import { GetAllUserDto } from './dto/get-all-user.dto';
 import { getSkipTakeParams } from 'src/common/utils/function';
 import { UserRole } from 'src/common/enums/role.enum';
 
+export interface GetAllUsersFilter {
+  search?: string;
+  role?: UserRole;
+  isActive?: boolean;
+  accountType?: 'system' | 'google';
+}
+
 @Injectable()
 export class UserRepository {
   constructor(
@@ -60,7 +67,10 @@ export class UserRepository {
   }
 
   async findAll(getAllUserDto: GetAllUserDto) {
-    const { page, pageSize, search, createdFrom, createdTo } = getAllUserDto;
+    const { page, pageSize, role, isActive, search, createdFrom, createdTo } =
+      getAllUserDto;
+
+    console.log('getAllUserDto', getAllUserDto);
 
     const queryBuilder = this.userRepository.createQueryBuilder('user');
 
@@ -69,6 +79,11 @@ export class UserRepository {
 
     if (createdTo)
       queryBuilder.andWhere('user.createdAt <= :createdTo', { createdTo });
+
+    if (role) queryBuilder.andWhere('user.role = :role', { role });
+
+    if (isActive !== undefined)
+      queryBuilder.andWhere('user.isActive = :isActive', { isActive });
 
     if (search && search.trim() !== '')
       queryBuilder.andWhere('LOWER(user.name) LIKE :search', {
@@ -83,6 +98,29 @@ export class UserRepository {
 
     const [users, total] = await queryBuilder.getManyAndCount();
     return { users, total };
+  }
+
+  async findAllForExport(filter: GetAllUsersFilter): Promise<User[]> {
+    const { search, role, isActive, accountType } = filter;
+
+    const query = this.userRepository.createQueryBuilder('user');
+
+    if (search)
+      query.andWhere('(user.name ILIKE :search OR user.email ILIKE :search)', {
+        search: `%${search}%`,
+      });
+
+    if (role) query.andWhere('user.role = :role', { role });
+
+    if (isActive !== undefined)
+      query.andWhere('user.isActive = :isActive', { isActive });
+
+    if (accountType === 'system') query.andWhere('user.password IS NOT NULL');
+    else if (accountType === 'google') query.andWhere('user.password IS NULL');
+
+    query.orderBy('user.createdAt', 'DESC');
+
+    return await query.getMany();
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {

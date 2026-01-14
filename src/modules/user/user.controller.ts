@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   Put,
   Query,
@@ -14,6 +15,7 @@ import type { Response } from 'express';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/common/enums/role.enum';
 import { createPaginatedResponse } from 'src/common/utils/function';
+import { ExportUsersDto } from './dto/export-user.dto';
 import { GetAllUserDto } from './dto/get-all-user.dto';
 import { ChangePasswordDto } from './dto/update-password.dto';
 import { UpdateUserByAdminDto } from './dto/update-user-by-admin.dto';
@@ -81,6 +83,37 @@ export class UserController {
       return res.status(500).json({
         statusCode: 500,
         message: `Lấy thông tin người dùng thất bại: ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Get('admin/export')
+  @Header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @Header('Content-Disposition', 'attachment; filename=users.xlsx')
+  async exportUsers(
+    @Res() res: Response,
+    @Query() exportUsersDto: ExportUsersDto,
+  ) {
+    try {
+      const buffer = await this.userService.exportUsersToExcel(exportUsersDto);
+      const filename = `users_${new Date().getTime()}.xlsx`;
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      res.setHeader('Content-Length', buffer.length.toString());
+
+      return res.status(200).end(buffer);
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Export dữ liệu thất bại: ${error?.message ?? error}`,
       });
     }
   }
