@@ -7,6 +7,9 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { GetUserDto } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entity/user.entity';
+import { GetAllUserDto } from './dto/get-all-user.dto';
+import { getSkipTakeParams } from 'src/common/utils/function';
+import { UserRole } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class UserRepository {
@@ -56,6 +59,32 @@ export class UserRepository {
     return user;
   }
 
+  async findAll(getAllUserDto: GetAllUserDto) {
+    const { page, pageSize, search, createdFrom, createdTo } = getAllUserDto;
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+    if (createdFrom)
+      queryBuilder.andWhere('user.createdAt >= :createdFrom', { createdFrom });
+
+    if (createdTo)
+      queryBuilder.andWhere('user.createdAt <= :createdTo', { createdTo });
+
+    if (search && search.trim() !== '')
+      queryBuilder.andWhere('LOWER(user.name) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+
+    queryBuilder.orderBy('user.createdAt', 'DESC');
+
+    const { skip, take } = getSkipTakeParams({ page, pageSize });
+    if (skip !== undefined) queryBuilder.skip(skip);
+    if (take !== undefined) queryBuilder.take(take);
+
+    const [users, total] = await queryBuilder.getManyAndCount();
+    return { users, total };
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.userRepository.findOne({
       where: { id },
@@ -64,6 +93,14 @@ export class UserRepository {
     if (!user) throw new NotFoundException('Không tìm thấy người dùng');
 
     await this.userRepository.update(id, updateUserDto);
+    return this.findOne({ id });
+  }
+
+  async updateRoleAndStatus(
+    id: string,
+    data: { role?: UserRole; isActive?: boolean; updatedBy: string },
+  ) {
+    await this.userRepository.update(id, data);
     return this.findOne({ id });
   }
 

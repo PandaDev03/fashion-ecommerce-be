@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
 import { CreateGoogleUserDto } from './dto/create-google-user.dto';
@@ -6,6 +10,9 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRepository } from './user.repository';
+import { GetUserDto } from './dto/get-user.dto';
+import { UpdateUserByAdminDto } from './dto/update-user-by-admin.dto';
+import { UserRole } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class UserService {
@@ -42,6 +49,10 @@ export class UserService {
     return await this.userRepository.createGoogleUser(createGoogleUserDto);
   }
 
+  async findAll(getUserDto: GetUserDto) {
+    return await this.userRepository.findAll(getUserDto);
+  }
+
   async findByEmail(email: string) {
     return await this.userRepository.findOne({ email });
   }
@@ -52,6 +63,28 @@ export class UserService {
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     return await this.userRepository.update(id, updateUserDto);
+  }
+
+  async updateUserByAdmin(
+    id: string,
+    updateUserByAdminDto: IUpdate<UpdateUserByAdminDto>,
+  ) {
+    const user = await this.userRepository.findOne({ id });
+    if (!user) throw new NotFoundException('Không tìm thấy người dùng');
+
+    const { updatedBy, variables } = updateUserByAdminDto;
+    const { role, isActive } = variables;
+
+    if (role === undefined && isActive === undefined)
+      throw new BadRequestException('No data provided for update');
+
+    console.log('isActive', isActive);
+
+    return await this.userRepository.updateRoleAndStatus(id, {
+      role,
+      isActive,
+      updatedBy,
+    });
   }
 
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
