@@ -379,11 +379,11 @@ export class ProductRepository {
     }
 
     queryBuilder
-      .addOrderBy('productOption.position', 'ASC')
-      .addOrderBy('variantOptionValue.position', 'ASC')
-      .addOrderBy('productOptionValue.position', 'ASC')
-      .addOrderBy('variant.position', 'ASC')
-      .addOrderBy('variantImage.position', 'ASC')
+      // .addOrderBy('productOption.position', 'ASC')
+      // .addOrderBy('variantOptionValue.position', 'ASC')
+      // .addOrderBy('productOptionValue.position', 'ASC')
+      // .addOrderBy('variant.position', 'ASC')
+      // .addOrderBy('variantImage.position', 'ASC')
       .addOrderBy('product.createdAt', 'DESC');
 
     const { skip, take } = getSkipTakeParams({ page, pageSize });
@@ -392,16 +392,40 @@ export class ProductRepository {
 
     const [products, total] = await queryBuilder.getManyAndCount();
 
-    // Filter option values nếu includeVariants = false
+    products.forEach((product) => {
+      if (product.options) {
+        product.options.sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        product.options.forEach((option) => {
+          if (option.values)
+            option.values.sort((a, b) => (a.position || 0) - (b.position || 0));
+        });
+      }
+
+      if (product.variants) {
+        product.variants.sort((a, b) => (a.position || 0) - (b.position || 0));
+
+        product.variants.forEach((variant) => {
+          if (variant.imageMappings)
+            variant.imageMappings.sort(
+              (a, b) => (a.position || 0) - (b.position || 0),
+            );
+
+          if (variant.optionValues)
+            variant.optionValues.sort(
+              (a, b) => (a.position || 0) - (b.position || 0),
+            );
+        });
+      }
+    });
+
     if (!includeVariants) {
       const filteredProducts = products.map((product) => {
-        // Chỉ filter cho product có variants
         if (
           product.hasVariants &&
           product.options &&
           product.variants?.length
         ) {
-          // Lấy tất cả optionValueIds đang được sử dụng trong variants
           const usedOptionValueIds = new Set<string>();
 
           product.variants.forEach((variant) => {
@@ -410,7 +434,6 @@ export class ProductRepository {
             });
           });
 
-          // Filter options: chỉ giữ values có trong usedOptionValueIds
           product.options = product.options.map((option) => ({
             ...option,
             values: option.values?.filter((value) =>

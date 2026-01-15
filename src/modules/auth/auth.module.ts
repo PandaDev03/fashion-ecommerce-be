@@ -11,11 +11,13 @@ import { AuthService } from './auth.service';
 import { Auth } from './entity/auth.entity';
 import { JwtStrategy } from './strategies/jwt-strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Auth, User]),
     UserModule,
+    MailModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
