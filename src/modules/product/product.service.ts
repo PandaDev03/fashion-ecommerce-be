@@ -1051,6 +1051,7 @@ export class ProductService {
       if (name !== undefined) productData.name = name;
       if (slug !== undefined) productData.slug = slug;
       if (brandId !== undefined) productData.brandId = brandId;
+      if (status !== undefined) productData.status = status;
       if (categoryId !== undefined) productData.categoryId = categoryId;
       if (parentPrice !== undefined) productData.price = parentPrice;
       if (parentStock !== undefined) productData.stock = parentStock;

@@ -17,6 +17,8 @@ import type { Response } from 'express';
 import { Public } from 'src/common/decorators/public.decorator';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SignInWIthGoogleDto } from './dto/sign-in-with-google.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -220,6 +222,57 @@ export class AuthController {
         statusCode: 500,
         message: `Đăng xuất thất bại: ${error?.message ?? error}`,
       });
+    }
+  }
+
+  @Public()
+  @Post('/request-password-reset')
+  async requestPasswordReset(
+    @Res() res: Response,
+    @Body() requestPasswordResetDto: RequestPasswordResetDto,
+  ) {
+    try {
+      await this.authService.requestPasswordReset(
+        requestPasswordResetDto.email,
+      );
+
+      return res.status(200).json({
+        statusCode: 200,
+        message:
+          'Yêu cầu đã được ghi nhận. Nếu email này đã đăng ký, bạn sẽ nhận được hướng dẫn đổi mật khẩu trong hộp thư đến (kiểm tra cả hòm thư Spam)',
+      });
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        message: `Không thể xử lý yêu cầu: ${error?.message ?? error}`,
+      });
+    }
+  }
+
+  @Public()
+  @Post('/reset-password')
+  async resetPassword(
+    @Res() res: Response,
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ) {
+    try {
+      const { token, newPassword } = resetPasswordDto;
+      await this.authService.resetPasswordWithToken(token, newPassword);
+
+      return res.status(200).json({
+        statusCode: 200,
+        message:
+          'Mật khẩu của bạn đã được cập nhật thành công. Vui lòng sử dụng mật khẩu mới để đăng nhập',
+      });
+    } catch (error) {
+      if (error.name === 'TokenExpiredError' || error.status === 400)
+        throw new BadRequestException(
+          'Liên kết khôi phục mật khẩu đã hết hạn hoặc không hợp lệ.',
+        );
+
+      throw new InternalServerErrorException(
+        `Không thể thực hiện đổi mật khẩu: ${error.message}`,
+      );
     }
   }
 }

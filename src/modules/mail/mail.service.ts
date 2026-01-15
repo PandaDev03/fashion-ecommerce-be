@@ -10,6 +10,20 @@ export class MailService {
     private readonly configService: ConfigService,
   ) {}
 
+  async sendResetPasswordEmail(email: string, resetUrl: string): Promise<void> {
+    const context = {
+      logoUrl: this.configService.getOrThrow<string>('LOGO_URL'),
+      resetUrl,
+    };
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Đặt lại mật khẩu',
+      template: 'reset-password',
+      context,
+    });
+  }
+
   async sendOrderConfirmation(order: OrderResponseDto) {
     const context = {
       logoUrl: this.configService.getOrThrow<string>('LOGO_URL'),
@@ -29,6 +43,7 @@ export class MailService {
       note: order.note,
       items: order.items.map((item) => ({
         ...item,
+        productVariantId: item?.productVariantId ?? '-',
         unitPriceFormatted: item.unitPrice.toLocaleString('vi-VN'),
         totalPriceFormatted: item.totalPrice.toLocaleString('vi-VN'),
         variantText:
